@@ -60,7 +60,7 @@ export function InviteModal({ open, onClose, endpoint, roles, defaultRole, scope
     <Modal open={open} onClose={close} title={result ? 'Invitation link ready' : `Invite people to ${scopeName}`}>
       {result ? (
         <div className="form">
-          <p className="muted">Share this link with the people you're inviting. For security it's shown only once — create a new one if you lose it.</p>
+          <p className="muted">It's shown only once, so copy it now.</p>
           <div className="copy-field">
             <input className="input" readOnly value={result.url} onFocus={(e) => e.target.select()} aria-label="Invitation link" />
             <button className="btn primary" onClick={copy}><Copy size={15} /> Copy</button>
@@ -91,7 +91,7 @@ export function InviteModal({ open, onClose, endpoint, roles, defaultRole, scope
           <details>
             <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>Restrict who can accept</summary>
             <div className="form" style={{ marginTop: 12 }}>
-              <Field label="Specific email" htmlFor="iem" hint="We'll email the link and only this address can use it.">
+              <Field label="Specific email" htmlFor="iem" hint="We'll email it. Only this address can accept.">
                 <input id="iem" className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="name@company.com" />
               </Field>
               <Field label="Email domain" htmlFor="idm" hint="Only addresses at this domain can accept.">
@@ -139,7 +139,7 @@ export function MembersPage() {
     <div className="stack" style={{ gap: 28 }}>
       <section>
         <div className="section-head">
-          <div><h2>Members</h2><p className="subtle">{members.data?.data.length} people have access to this project.</p></div>
+          <div><h2>Members <span className="subtle" style={{ fontWeight: 400 }}>{members.data?.data.length}</span></h2></div>
           <div className="row">
             <button className="btn" onClick={() => setAdding(true)} disabled={!p.writable}><UserPlus size={15} /> Add from organization</button>
             <button className="btn primary" onClick={() => setInviting(true)} disabled={!p.writable}><Link2 size={15} /> Invite with link</button>
@@ -173,6 +173,7 @@ export function MembersPage() {
                         <div style={{ minWidth: 110 }}>
                           <div className="progress success" style={{ height: 6 }}><span style={{ width: `${Math.round((pr.completed / pr.required) * 100)}%` }} /></div>
                           <span className="subtle">{pr.completed}/{pr.required}</span>
+                          {pr.overdue > 0 && <span className="badge danger" style={{ marginLeft: 6 }}>{pr.overdue} overdue</span>}
                         </div>
                       ) : <span className="subtle">—</span>}
                     </td>
@@ -189,10 +190,10 @@ export function MembersPage() {
       </section>
 
       <section>
-        <div className="section-head"><div><h2>Invitation links</h2><p className="subtle">Links expire automatically. Revoke one if it was shared by mistake.</p></div></div>
+        <div className="section-head"><div><h2>Invitation links</h2></div></div>
         <div className="card table-wrap">
           {invites.data?.data.length === 0 ? (
-            <Empty icon={<Link2 size={22} />} title="No invitations yet">Create a link to onboard someone with a role already assigned.</Empty>
+            <Empty icon={<Link2 size={22} />} title="No invitations yet" />
           ) : (
             <table className="table">
               <thead><tr><th>Role</th><th>Restriction</th><th>Uses</th><th>Status</th><th>Expires</th><th>Created</th><th aria-label="Actions" /></tr></thead>
@@ -287,7 +288,6 @@ function AddMemberForm({ onClose, onAdded }: { onClose: () => void; onAdded: () 
 
   return (
     <form className="form" onSubmit={submit}>
-      <p className="muted" style={{ marginTop: -6 }}>People who already belong to {p.tenant.name}. Anyone else needs an invitation link.</p>
       <ErrorAlert error={error} />
       <div className="search">
         <Search size={16} />

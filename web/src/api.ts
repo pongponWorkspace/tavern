@@ -12,6 +12,12 @@ export class ApiError extends Error {
 }
 
 let csrfToken: string | null = null;
+
+/** "View as" preview for Project Admins. The server applies it to reads and refuses changes while it's on. */
+let previewRole: Exclude<ProjectRole, 'project_admin'> | null = null;
+export const setPreviewRole = (r: typeof previewRole) => {
+  previewRole = r;
+};
 export const setCsrf = (t: string | null) => {
   csrfToken = t;
 };
@@ -28,6 +34,7 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   const headers: Record<string, string> = {};
   if (opts.body !== undefined) headers['content-type'] = 'application/json';
   if (method !== 'GET' && csrfToken) headers['x-csrf-token'] = csrfToken;
+  if (previewRole) headers['x-preview-role'] = previewRole;
   let res: Response;
   try {
     res = await fetch(url, { method, headers, credentials: 'same-origin', body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined });
@@ -127,6 +134,8 @@ export interface Project {
   workspace: { id: string; name: string; status: string };
   owner: Person | null;
   myRole: ProjectRole;
+  actualRole: ProjectRole;
+  previewing: boolean;
   rolePermissions: import('./lib/rbac').ProjectPermissions;
   permissions: Record<string, boolean>;
   updatedAt: string;

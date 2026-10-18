@@ -3,57 +3,27 @@
 //   2. PUT  storage/upload   → bytes land under a tenant-namespaced, non-guessable key
 //   3. POST upload-complete  → re-checks membership, then queues the malware/content scan
 //   4. GET  download-url     → only after an item-level access check AND a clean scan
-// The local-disk driver stands in for private S3-compatible storage in development.
+// Storage is pluggable (src/storage): local disk in development, any private
+// S3-compatible bucket (Cloudflare R2, MinIO, AWS) in production.
 
 import type { FastifyInstance } from 'fastify';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { z } from 'zod';
 import { config } from '../config.js';
 import { one, pool, query, tx } from '../db/pool.js';
 import { AppError, forbidden, invalid, notFound } from '../lib/errors.js';
-import { hmac, safeEqual } from '../lib/crypto.js';
+import { contentDisposition, localStorage, storage, verifyLocal } from '../storage/index.js';
 import { extensionOf, safeFilename } from '../lib/text.js';
 import { parse, uuid } from '../lib/validate.js';
 import { audit } from '../audit.js';
 import { loadProjectAccess, requireProject, requireUser } from '../authz/context.js';
 import { loadItemForUser } from './knowledge-access.js';
 
-// ───────────────────────── Storage driver ─────────────────────────
-
-const storageRoot = () => path.resolve(config.storageDir);
-
-function objectPath(key: string): string {
-  const p = path.resolve(storageRoot(), key);
-  if (!p.startsWith(storageRoot() + path.sep)) throw new Error('storage key escapes root');
-  return p;
-}
-
-async function putObject(key: string, data: Buffer) {
-  const p = objectPath(key);
-  await mkdir(path.dirname(p), { recursive: true });
-  // Keys embed the file's own UUID, so one upload can never land on another file's object (§12.3).
-  await writeFile(p, data);
-}
-
 export async function removeStoredObject(key: string) {
-  await rm(objectPath(key), { force: true });
+  await storage().remove(key);
 }
 
-// ───────────────────────── Signed URLs ─────────────────────────
-
-function signUrl(kind: 'upload' | 'download', fileId: string, ttlSeconds: number, extra = '') {
-  const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
-  const sig = hmac(`${kind}:${fileId}:${exp}:${extra}`);
-  return { exp, sig, expiresAt: new Date(exp * 1000).toISOString() };
-}
-
-function verifySignature(kind: 'upload' | 'download', fileId: string, exp: string, sig: string, extra = '') {
-  const expNum = Number(exp);
-  if (!Number.isFinite(expNum) || expNum < Date.now() / 1000) return false;
-  return safeEqual(sig, hmac(`${kind}:${fileId}:${expNum}:${extra}`));
-}
+const PREVIEWABLE = /^(image\/(png|jpeg|gif|webp)|application\/pdf)$/;
 
 // ───────────────────────── Content scanner ─────────────────────────
 
@@ -125,15 +95,18 @@ function enqueueScan(fileId: string, tenantId: string) {
     const file = await one(pool, `SELECT * FROM files WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`, [fileId, tenantId]);
     if (!file) return;
     let result: ScanResult;
+    let checksum: string;
     try {
-      result = scanBuffer(await readFile(objectPath(file.storage_key)), file.original_filename);
+      const data = await storage().read(file.storage_key);
+      checksum = createHash('sha256').update(data).digest('hex');
+      result = scanBuffer(data, file.original_filename);
     } catch {
       // Scanner unavailable or object unreadable → stays unavailable (§11).
       await query(pool, `UPDATE files SET scan_status = 'failed', scan_detail = 'The file could not be scanned.' WHERE id = $1`, [fileId]);
       await audit(pool, null, { tenantId, projectId: file.project_id, action: 'file.scan_failed', targetType: 'file', targetId: fileId, outcome: 'failure' });
       return;
     }
-    await query(pool, `UPDATE files SET scan_status = $2, mime_type = $3, scan_detail = $4 WHERE id = $1`, [fileId, result.status, result.mimeType, result.detail]);
+    await query(pool, `UPDATE files SET scan_status = $2, mime_type = $3, scan_detail = $4, checksum_sha256 = coalesce(checksum_sha256, $5) WHERE id = $1`, [fileId, result.status, result.mimeType, result.detail, checksum]);
     await audit(pool, null, {
       tenantId, projectId: file.project_id, action: `file.scan_${result.status}`, targetType: 'file', targetId: fileId,
       outcome: result.status === 'clean' ? 'success' : 'denied', metadata: { filename: file.safe_filename, detectedType: result.mimeType },
@@ -200,6 +173,13 @@ export async function fileRoutes(app: FastifyInstance) {
       if (Number(used) + body.size > config.uploads.tenantQuotaBytes) {
         throw new AppError(422, 'QUOTA_EXCEEDED', 'Your organization has used its storage allowance. Remove unused files or ask an admin to raise the limit.');
       }
+      // Ceiling across every organization (keeps the bucket inside its free tier). Taken after the
+      // tenant lock, always in this order, so the two locks can't deadlock.
+      await query(db, 'SELECT pg_advisory_xact_lock(hashtext($1))', ['quota:global']);
+      const total = (await one(db, `SELECT coalesce(sum(size_bytes),0)::bigint AS n FROM files WHERE deleted_at IS NULL`))!.n;
+      if (Number(total) + body.size > config.storage.totalLimitBytes) {
+        throw new AppError(422, 'QUOTA_EXCEEDED', 'File storage for this service is full right now. Remove unused files or contact the administrator.');
+      }
       const fileId = randomUUID();
       await query(
         db,
@@ -208,36 +188,28 @@ export async function fileRoutes(app: FastifyInstance) {
         [fileId, access.tenantId, access.projectId, `tenants/${access.tenantId}/projects/${access.projectId}/${fileId}`,
          body.filename.slice(0, 255), filename, body.mimeType || 'application/octet-stream', body.size, u.id],
       );
-      return { fileId };
+      return { fileId, key: `tenants/${access.tenantId}/projects/${access.projectId}/${fileId}` };
     });
-    const s = signUrl('upload', result.fileId, config.uploads.uploadUrlTtlSeconds);
-    return reply.status(201).send({
-      fileId: result.fileId,
-      upload: {
-        method: 'PUT',
-        url: `/api/v1/storage/upload/${result.fileId}?exp=${s.exp}&sig=${s.sig}`,
-        headers: { 'content-type': 'application/octet-stream' },
-        expiresAt: s.expiresAt,
-      },
-    });
+    const upload = await storage().uploadTarget(result.fileId, result.key, config.uploads.uploadUrlTtlSeconds);
+    return reply.status(201).send({ fileId: result.fileId, upload });
   });
 
-  // Raw-body endpoints authorized by URL signature (stand-in for object storage).
-  await app.register(async (storage) => {
-    storage.removeAllContentTypeParsers();
-    storage.addContentTypeParser('*', { parseAs: 'buffer', bodyLimit: config.uploads.maxBytes + 1 }, (_req, body, done) => done(null, body));
+  // Local driver only: raw-body endpoints authorized by URL signature, standing in for the bucket.
+  if (storage().kind === 'local') await app.register(async (local) => {
+    local.removeAllContentTypeParsers();
+    local.addContentTypeParser('*', { parseAs: 'buffer', bodyLimit: config.uploads.maxBytes + 1 }, (_req, body, done) => done(null, body));
 
-    storage.put('/storage/upload/:fileId', async (req) => {
+    local.put('/storage/upload/:fileId', async (req) => {
       const { fileId } = parse(z.object({ fileId: uuid }), req.params);
       const q = req.query as Record<string, string>;
-      if (!verifySignature('upload', fileId, q.exp ?? '', q.sig ?? '')) throw forbidden('This upload link is invalid or has expired.');
+      if (!verifyLocal('upload', fileId, q.exp ?? '', q.sig ?? '')) throw forbidden('This upload link is invalid or has expired.');
       const body = req.body;
       if (!Buffer.isBuffer(body)) throw invalid('Upload body is missing.');
       await tx(async (db) => {
         const file = await one(db, `SELECT * FROM files WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, [fileId]);
         if (!file || file.upload_state !== 'initiated') throw notFound('upload');
         if (body.length !== Number(file.size_bytes)) throw invalid(`The uploaded file is ${body.length} bytes but ${file.size_bytes} were expected.`);
-        await putObject(file.storage_key, body);
+        await localStorage().write(file.storage_key, body);
         await query(db, `UPDATE files SET upload_state = 'uploaded', checksum_sha256 = $2 WHERE id = $1`, [
           fileId,
           createHash('sha256').update(body).digest('hex'),
@@ -246,19 +218,18 @@ export async function fileRoutes(app: FastifyInstance) {
       return { ok: true };
     });
 
-    storage.get('/storage/download/:fileId', async (req, reply) => {
+    local.get('/storage/download/:fileId', async (req, reply) => {
       const { fileId } = parse(z.object({ fileId: uuid }), req.params);
       const q = req.query as Record<string, string>;
       const disposition = q.d === 'inline' ? 'inline' : 'attachment';
-      if (!verifySignature('download', fileId, q.exp ?? '', q.sig ?? '', disposition)) throw forbidden('This download link is invalid or has expired.');
+      if (!verifyLocal('download', fileId, q.exp ?? '', q.sig ?? '', disposition)) throw forbidden('This download link is invalid or has expired.');
       const file = await one(pool, `SELECT * FROM files WHERE id = $1 AND deleted_at IS NULL AND scan_status = 'clean'`, [fileId]);
       if (!file) throw notFound('file');
-      const data = await readFile(objectPath(file.storage_key));
-      const previewable = /^image\/(png|jpeg|gif|webp)$/.test(file.mime_type) || file.mime_type === 'application/pdf';
-      const asInline = disposition === 'inline' && previewable;
+      const data = await localStorage().read(file.storage_key);
+      const previewable = PREVIEWABLE.test(file.mime_type);
       reply
         .header('content-type', previewable ? file.mime_type : 'application/octet-stream')
-        .header('content-disposition', `${asInline ? 'inline' : 'attachment'}; filename="${file.safe_filename.replace(/[^\x20-\x7e]/g, '_')}"; filename*=UTF-8''${encodeURIComponent(file.safe_filename)}`)
+        .header('content-disposition', contentDisposition(disposition === 'inline' && previewable ? 'inline' : 'attachment', file.safe_filename))
         .header('x-content-type-options', 'nosniff')
         .header('cache-control', 'private, no-store')
         .header('content-security-policy', "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'");
@@ -277,7 +248,19 @@ export async function fileRoutes(app: FastifyInstance) {
         throw e.status === 404 ? notFound('upload') : e;
       });
       if (f.upload_state === 'completed') return f; // idempotent retry (§11)
-      if (f.upload_state !== 'uploaded') throw invalid('The file has not finished uploading.');
+      if (f.upload_state === 'initiated') {
+        // Direct-to-bucket uploads (S3/R2) never pass through the API: confirm the object is there
+        // and exactly the declared size before accepting it. A mismatch is discarded.
+        const size = await storage().sizeOf(f.storage_key);
+        if (size === null) throw invalid('The file has not finished uploading.');
+        if (size !== Number(f.size_bytes)) {
+          await storage().remove(f.storage_key).catch(() => {});
+          await query(db, `UPDATE files SET deleted_at = now() WHERE id = $1`, [fileId]);
+          throw invalid(`The uploaded file is ${size} bytes but ${f.size_bytes} were declared. Upload it again.`);
+        }
+      } else if (f.upload_state !== 'uploaded') {
+        throw invalid('The file has not finished uploading.');
+      }
       const updated = await one(db, `UPDATE files SET upload_state = 'completed' WHERE id = $1 RETURNING *`, [fileId]);
       await audit(db, req, {
         tenantId: f.tenant_id, projectId: f.project_id, actorUserId: u.id, action: 'file.uploaded', targetType: 'file', targetId: fileId,
@@ -325,8 +308,16 @@ export async function fileRoutes(app: FastifyInstance) {
         : 'This file could not be checked, so it is not available for download.';
       throw new AppError(409, 'FILE_NOT_AVAILABLE', reason, { scanStatus: file.scan_status });
     }
-    const s = signUrl('download', fileId, config.uploads.downloadUrlTtlSeconds, q.disposition);
-    return { url: `/api/v1/storage/download/${fileId}?exp=${s.exp}&sig=${s.sig}&d=${q.disposition}`, expiresAt: s.expiresAt };
+    const previewable = PREVIEWABLE.test(file.mime_type ?? '');
+    const ttl = config.uploads.downloadUrlTtlSeconds;
+    const url = await storage().downloadUrl(fileId, file.storage_key, {
+      filename: file.safe_filename,
+      // Only images and PDFs may render; everything else is forced to download as opaque bytes.
+      contentType: previewable ? file.mime_type : 'application/octet-stream',
+      disposition: q.disposition === 'inline' && previewable ? 'inline' : 'attachment',
+      ttlSeconds: ttl,
+    });
+    return { url, expiresAt: new Date(Date.now() + ttl * 1000).toISOString() };
   });
 
   app.delete('/files/:fileId', async (req) => {

@@ -6,6 +6,7 @@ import { decodeCursor, pageOf } from '../lib/pagination.js';
 import { limitParam, parse, projectRole, uuid } from '../lib/validate.js';
 import { slugify, validateExternalUrl } from '../lib/text.js';
 import { audit } from '../audit.js';
+import { parseCsv, toCsv } from '../lib/csv.js';
 import { assertWritable, requireProject, requireUser, type ProjectAccess } from '../authz/context.js';
 import { buildItemRules, describeItemRules, itemPermissions, projectCan, type ItemRules } from '../authz/policy.js';
 import { loadItemForUser, loadRules, visibleTo } from './knowledge-access.js';
@@ -175,6 +176,29 @@ async function findDuplicates(db: Db, access: ProjectAccess, normalizedUrl: stri
   );
 }
 
+const KEEP_REVISIONS = 50;
+
+/** Write document content and record it as a new version (keeps the newest 50). */
+async function saveDocumentContent(db: Db, access: ProjectAccess, itemId: string, content: string, userId: string, restoredFrom: string | null = null) {
+  await query(
+    db,
+    `INSERT INTO knowledge_documents (knowledge_item_id, tenant_id, project_id, content_md, updated_by) VALUES ($1,$2,$3,$4,$5)
+     ON CONFLICT (knowledge_item_id) DO UPDATE SET content_md = excluded.content_md, updated_by = excluded.updated_by, updated_at = now()`,
+    [itemId, access.tenantId, access.projectId, content, userId],
+  );
+  await query(
+    db,
+    `INSERT INTO knowledge_document_revisions (tenant_id, project_id, knowledge_item_id, content_md, created_by, restored_from) VALUES ($1,$2,$3,$4,$5,$6)`,
+    [access.tenantId, access.projectId, itemId, content, userId, restoredFrom],
+  );
+  await query(
+    db,
+    `DELETE FROM knowledge_document_revisions WHERE knowledge_item_id = $1 AND id NOT IN (
+       SELECT id FROM knowledge_document_revisions WHERE knowledge_item_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2)`,
+    [itemId, KEEP_REVISIONS],
+  );
+}
+
 async function itemDetail(db: Db, userId: string, itemId: string) {
   const { row, access, rules, perms } = await loadItemForUser(db, userId, itemId);
   const full = await one(
@@ -279,6 +303,103 @@ export async function knowledgeRoutes(app: FastifyInstance) {
     };
   });
 
+  // ───────────── Link import / export (CSV) ─────────────
+
+  app.get('/projects/:projectId/knowledge/export', async (req, reply) => {
+    const u = requireUser(req);
+    const { projectId } = parse(z.object({ projectId: uuid }), req.params);
+    const access = await requireProject(pool, u.id, projectId, 'knowledge.view');
+    const rows = await query(
+      pool,
+      `SELECT ${ITEM_SUMMARY_COLUMNS}, ou.email AS owner_email FROM knowledge_items ki ${ITEM_JOINS}
+        WHERE ki.project_id = $1 AND ki.tenant_id = $2 AND ki.status = 'active' AND ki.type = 'external_link' AND ${visibleTo('ki', '$3::text')}
+        ORDER BY lower(ki.title)`,
+      [access.projectId, access.tenantId, access.role],
+    );
+    await audit(pool, req, { tenantId: access.tenantId, projectId, actorUserId: u.id, action: 'knowledge.exported', targetType: 'project', targetId: projectId, metadata: { rows: rows.length } });
+    const csv = toCsv(
+      ['Title', 'URL', 'Description', 'Category', 'Tags', 'Pinned', 'Owner', 'Updated (UTC)'],
+      rows.map((r) => [r.title, r.external_url, r.description, r.category_name ?? '', r.tags, r.is_pinned ? 'yes' : '', r.owner_email ?? '', r.updated_at]),
+    );
+    const name = slugify(access.projectName) || 'project';
+    return reply
+      .header('content-type', 'text/csv; charset=utf-8')
+      .header('content-disposition', `attachment; filename="${name}-links.csv"`)
+      .header('cache-control', 'no-store')
+      .send(csv);
+  });
+
+  app.post('/projects/:projectId/knowledge/import', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (req) => {
+    const u = requireUser(req);
+    const { projectId } = parse(z.object({ projectId: uuid }), req.params);
+    const body = parse(z.object({ csv: z.string().min(1).max(1_000_000) }), req.body);
+    const rows = parseCsv(body.csv);
+    if (rows.length === 0) throw invalid('csv: the file is empty');
+
+    // Columns are matched by header name (any order); without a header row, the order is title, url, description, category, tags.
+    const header = rows[0].map((h) => h.trim().toLowerCase());
+    const hasHeader = header.includes('url') || header.includes('title');
+    const col = (name: string, fallback: number) => (hasHeader ? header.indexOf(name) : fallback);
+    const idx = { title: col('title', 0), url: col('url', 1), description: col('description', 2), category: col('category', 3), tags: col('tags', 4) };
+    if (hasHeader && (idx.title < 0 || idx.url < 0)) throw invalid('csv: needs at least a "title" and a "url" column');
+    const data = hasHeader ? rows.slice(1) : rows;
+    if (data.length > 500) throw invalid('csv: import up to 500 links at a time');
+
+    return tx(async (db) => {
+      const access = await requireProject(db, u.id, projectId, 'knowledge.create', { write: true });
+      const canMakeCategories = projectCan(access.role, 'category.manage', access.permissions);
+      const cats = new Map((await query(db, 'SELECT id, lower(name) AS name FROM knowledge_categories WHERE project_id = $1', [projectId])).map((c) => [c.name, c.id as string]));
+      const seen = new Set<string>();
+      const skipped: { row: number; title: string; reason: string }[] = [];
+      let created = 0;
+
+      for (const [i, r] of data.entries()) {
+        const rowNo = i + (hasHeader ? 2 : 1);
+        const get = (k: keyof typeof idx) => (idx[k] >= 0 ? (r[idx[k]] ?? '').trim() : '');
+        const title = get('title').slice(0, 200);
+        if (!title) { skipped.push({ row: rowNo, title: '', reason: 'No title' }); continue; }
+        let url: { display: string; normalized: string };
+        try { url = validateExternalUrl(get('url')); } catch { skipped.push({ row: rowNo, title, reason: 'Not a valid http(s) link' }); continue; }
+        if (seen.has(url.normalized) || (await findDuplicates(db, access, url.normalized)).length) {
+          skipped.push({ row: rowNo, title, reason: 'Already in this project' });
+          continue;
+        }
+        seen.add(url.normalized);
+
+        let categoryId: string | null = null;
+        const catName = get('category').slice(0, 60);
+        if (catName) {
+          categoryId = cats.get(catName.toLowerCase()) ?? null;
+          if (!categoryId && canMakeCategories) {
+            const c = await one(
+              db,
+              `INSERT INTO knowledge_categories (tenant_id, project_id, name, slug, sort_order)
+               VALUES ($1,$2,$3,$4,(SELECT coalesce(max(sort_order),0)+1 FROM knowledge_categories WHERE project_id = $2))
+               ON CONFLICT (project_id, slug) DO UPDATE SET name = knowledge_categories.name RETURNING id`,
+              [access.tenantId, projectId, catName, slugify(catName)],
+            );
+            categoryId = c.id;
+            cats.set(catName.toLowerCase(), c.id);
+          }
+        }
+        const item = await one(
+          db,
+          `INSERT INTO knowledge_items (tenant_id, project_id, category_id, type, title, description, external_url, normalized_url, owner_user_id, created_by, updated_by)
+           VALUES ($1,$2,$3,'external_link',$4,$5,$6,$7,$8,$8,$8) RETURNING id`,
+          [access.tenantId, projectId, categoryId, title, get('description').slice(0, 2000), url.display, url.normalized, u.id],
+        );
+        const tags = get('tags').split(/[,;|]/).map((t) => t.trim()).filter(Boolean).slice(0, 20).map((t) => t.slice(0, 40));
+        if (tags.length) await setTags(db, access, item.id, tags);
+        created++;
+      }
+      await audit(db, req, {
+        tenantId: access.tenantId, projectId, actorUserId: u.id, action: 'knowledge.imported', targetType: 'project', targetId: projectId,
+        metadata: { created, skipped: skipped.length },
+      });
+      return { created, skipped };
+    });
+  });
+
   app.get('/projects/:projectId/knowledge/duplicates', async (req) => {
     const u = requireUser(req);
     const { projectId } = parse(z.object({ projectId: uuid }), req.params);
@@ -337,8 +458,7 @@ export async function knowledgeRoutes(app: FastifyInstance) {
          fileId, body.ownerUserId === undefined ? u.id : body.ownerUserId, u.id, body.isPinned ?? false],
       );
       if (body.type === 'internal_document') {
-        await query(db, `INSERT INTO knowledge_documents (knowledge_item_id, tenant_id, project_id, content_md, updated_by) VALUES ($1,$2,$3,$4,$5)`,
-          [item.id, access.tenantId, access.projectId, body.content ?? '', u.id]);
+        await saveDocumentContent(db, access, item.id, body.content ?? '', u.id);
       }
       if (body.tags?.length) await setTags(db, access, item.id, body.tags);
       if (rules) await writeRules(db, access, item.id, rules, u.id);
@@ -518,18 +638,71 @@ export async function knowledgeRoutes(app: FastifyInstance) {
       if (row.version !== body.version) {
         throw conflict('Someone else saved this document while you were editing. Copy your changes, then reload.', { currentVersion: row.version });
       }
-      await query(
-        db,
-        `INSERT INTO knowledge_documents (knowledge_item_id, tenant_id, project_id, content_md, updated_by) VALUES ($1,$2,$3,$4,$5)
-         ON CONFLICT (knowledge_item_id) DO UPDATE SET content_md = excluded.content_md, updated_by = excluded.updated_by, updated_at = now()`,
-        [itemId, access.tenantId, access.projectId, body.content, u.id],
-      );
+      const current = await one(db, 'SELECT content_md FROM knowledge_documents WHERE knowledge_item_id = $1', [itemId]);
+      if (current?.content_md === body.content) return row.version as number; // nothing changed — no new version
+      await saveDocumentContent(db, access, itemId, body.content, u.id);
       const r = await one(db, 'UPDATE knowledge_items SET updated_by = $2, updated_at = now(), version = version + 1 WHERE id = $1 RETURNING version', [itemId, u.id]);
       await audit(db, req, {
         tenantId: access.tenantId, projectId: access.projectId, actorUserId: u.id, action: 'knowledge.content_updated',
         targetType: 'knowledge_item', targetId: itemId, metadata: { length: body.content.length },
       });
       return r.version as number;
+    });
+    return { ok: true, version };
+  });
+
+  // ───────────── Version history ─────────────
+
+  app.get('/knowledge/:itemId/revisions', async (req) => {
+    const u = requireUser(req);
+    const { itemId } = parse(z.object({ itemId: uuid }), req.params);
+    const { row } = await loadItemForUser(pool, u.id, itemId);
+    if (row.type !== 'internal_document') throw notFound('document');
+    const rows = await query(
+      pool,
+      `SELECT r.id, r.created_at, length(r.content_md) AS length, r.restored_from, u.id AS author_id, u.display_name AS author_name
+         FROM knowledge_document_revisions r JOIN users u ON u.id = r.created_by
+        WHERE r.knowledge_item_id = $1 ORDER BY r.created_at DESC, r.id DESC`,
+      [itemId],
+    );
+    return {
+      data: rows.map((r, i) => ({
+        id: r.id, createdAt: r.created_at, length: r.length, current: i === 0, restored: Boolean(r.restored_from),
+        author: { id: r.author_id, displayName: r.author_name },
+      })),
+    };
+  });
+
+  app.get('/knowledge/:itemId/revisions/:revisionId', async (req) => {
+    const u = requireUser(req);
+    const { itemId, revisionId } = parse(z.object({ itemId: uuid, revisionId: uuid }), req.params);
+    const { row } = await loadItemForUser(pool, u.id, itemId);
+    if (row.type !== 'internal_document') throw notFound('document');
+    const r = await one(pool, `SELECT id, content_md, created_at FROM knowledge_document_revisions WHERE id = $1 AND knowledge_item_id = $2`, [revisionId, itemId]);
+    if (!r) throw notFound('version');
+    return { id: r.id, content: r.content_md, createdAt: r.created_at };
+  });
+
+  app.post('/knowledge/:itemId/revisions/:revisionId/restore', async (req) => {
+    const u = requireUser(req);
+    const { itemId, revisionId } = parse(z.object({ itemId: uuid, revisionId: uuid }), req.params);
+    const body = parse(z.object({ version: z.number().int().positive() }), req.body);
+    const version = await tx(async (db) => {
+      const { row, access, perms } = await loadItemForUser(db, u.id, itemId, { lock: true });
+      if (row.type !== 'internal_document') throw notFound('document');
+      if (!perms.edit) throw forbidden();
+      assertWritable(access);
+      if (row.status !== 'active') throw conflict('Restore this document before editing it.');
+      if (row.version !== body.version) throw conflict('Someone else changed this document. Reload and try again.', { currentVersion: row.version });
+      const r = await one(db, `SELECT content_md FROM knowledge_document_revisions WHERE id = $1 AND knowledge_item_id = $2`, [revisionId, itemId]);
+      if (!r) throw notFound('version');
+      await saveDocumentContent(db, access, itemId, r.content_md, u.id, revisionId);
+      const v = await one(db, 'UPDATE knowledge_items SET updated_by = $2, updated_at = now(), version = version + 1 WHERE id = $1 RETURNING version', [itemId, u.id]);
+      await audit(db, req, {
+        tenantId: access.tenantId, projectId: access.projectId, actorUserId: u.id, action: 'knowledge.version_restored',
+        targetType: 'knowledge_item', targetId: itemId, metadata: { title: row.title },
+      });
+      return v.version as number;
     });
     return { ok: true, version };
   });

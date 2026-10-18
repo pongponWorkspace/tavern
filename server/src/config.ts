@@ -26,6 +26,24 @@ export const config = {
     return s;
   })(),
   storageDir: env('STORAGE_DIR', '.storage'),
+  storage: {
+    /** 'local' = disk under STORAGE_DIR (development); 's3' = any S3-compatible bucket (Cloudflare R2, MinIO, AWS). */
+    driver: env('STORAGE_DRIVER', 'local') as 'local' | 's3',
+    s3: {
+      endpoint: process.env.S3_ENDPOINT ?? '',
+      region: process.env.S3_REGION || 'auto',
+      bucket: process.env.S3_BUCKET ?? '',
+      accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
+      /** Needed for MinIO; R2 and AWS work either way. */
+      forcePathStyle: (process.env.S3_FORCE_PATH_STYLE ?? 'false') === 'true',
+    },
+    /**
+     * Hard ceiling for everything stored, across all organizations. Default 9 GB
+     * keeps Cloudflare R2 inside its 10 GB free tier with a safety margin.
+     */
+    totalLimitBytes: Number(env('STORAGE_TOTAL_LIMIT_BYTES', String(9 * 1024 * 1024 * 1024))),
+  },
   rateLimitEnabled: env('RATE_LIMIT', isTest ? 'off' : 'on') === 'on',
 
   google: {

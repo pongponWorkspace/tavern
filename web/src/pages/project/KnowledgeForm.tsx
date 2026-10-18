@@ -178,7 +178,7 @@ function KnowledgeForm({ project, type, item, onClose }: { project: Project; typ
           ) : (
             <p style={{ marginTop: 6 }}><strong>Drop a file here</strong> or click to choose</p>
           )}
-          <p className="subtle" style={{ marginTop: 4 }}>PDF, images, Office files, text, CSV or JSON — up to 25 MB. Files are scanned before anyone can download them.</p>
+          <p className="subtle" style={{ marginTop: 4 }}>PDF, images, Office, text or CSV · up to 25 MB</p>
           {progress !== null && <div className="progress" style={{ marginTop: 10 }}><span style={{ width: `${progress}%` }} /></div>}
         </div>
       )}
@@ -188,7 +188,7 @@ function KnowledgeForm({ project, type, item, onClose }: { project: Project; typ
       </Field>
 
       {type === 'external_link' && (
-        <Field label="URL" htmlFor="ku" hint="https:// links only. Tavern shows the link — access is still controlled by the tool it points to.">
+        <Field label="URL" htmlFor="ku">
           <input id="ku" className="input" type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" inputMode="url" />
         </Field>
       )}
@@ -196,7 +196,7 @@ function KnowledgeForm({ project, type, item, onClose }: { project: Project; typ
         <div className="alert warn"><AlertTriangle size={16} /><span>This link is already in the project as <strong>{dupes.map((d) => d.title).join(', ')}</strong>. You can still add it.</span></div>
       )}
 
-      <Field label="Why it matters" htmlFor="kd" hint="A sentence or two so people know when to use it.">
+      <Field label="Description" htmlFor="kd">
         <textarea id="kd" className="textarea" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} style={{ minHeight: 70 }} />
       </Field>
 
@@ -216,12 +216,12 @@ function KnowledgeForm({ project, type, item, onClose }: { project: Project; typ
         </Field>
       </div>
 
-      <Field label="Tags" htmlFor="kg" hint="Pick tags your project already uses, or type a new one and press Enter.">
+      <Field label="Tags" htmlFor="kg">
         <TagInput id="kg" value={tags} onChange={setTags} suggestions={tagOptions.data?.data ?? []} />
       </Field>
 
       {type === 'internal_document' && !item && (
-        <Field label="Content" htmlFor="kx" hint="Markdown supported. You can keep writing after it's created.">
+        <Field label="Content" htmlFor="kx" hint="Markdown">
           <textarea id="kx" className="textarea" value={content} onChange={(e) => setContent(e.target.value)} style={{ minHeight: 140, fontFamily: 'var(--font-mono)', fontSize: 13 }} />
         </Field>
       )}
@@ -234,7 +234,7 @@ function KnowledgeForm({ project, type, item, onClose }: { project: Project; typ
         <details open={item?.access?.restricted} style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '12px 14px' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600, display: 'flex', gap: 8, alignItems: 'center' }}><Lock size={15} /> Who can access this item</summary>
           <p className="subtle" style={{ margin: '8px 0 12px' }}>
-            Narrow access for sensitive items. People without view access won't see it anywhere — not in lists, search or counts. Project Admins always have full access.
+            Roles without view access won't see this item anywhere.
           </p>
           <div className="role-grid" role="table" aria-label="Item access by role">
             <div className="hd" role="columnheader">Role</div><div className="hd" role="columnheader">View</div><div className="hd" role="columnheader">Edit</div><div className="hd" role="columnheader">Archive</div>

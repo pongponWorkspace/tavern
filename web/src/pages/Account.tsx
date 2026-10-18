@@ -56,10 +56,10 @@ export function Account() {
         </form>
 
         <form className="card card-pad form" onSubmit={async (e: FormEvent) => { e.preventDefault(); if (await run('pw', () => api('/me/password', { body: u.hasPassword ? pw : { newPassword: pw.newPassword } }), 'Password updated — other devices were signed out')) setPw({ currentPassword: '', newPassword: '' }); }}>
-          <div><h2>{u.hasPassword ? 'Change password' : 'Add a password'}</h2>{!u.hasPassword && <p className="muted" style={{ marginTop: 4 }}>You sign in with Google. Add a password to also sign in with your email.</p>}</div>
+          <div><h2>{u.hasPassword ? 'Change password' : 'Add a password'}</h2>{!u.hasPassword && <p className="muted" style={{ marginTop: 4 }}>Add a password to also sign in with your email.</p>}</div>
           {error?.which === 'pw' && <ErrorAlert error={error.e} />}
           {u.hasPassword && <Field label="Current password" htmlFor="cp"><input id="cp" className="input" type="password" autoComplete="current-password" value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} /></Field>}
-          <Field label="New password" htmlFor="np" hint="At least 10 characters. Your other sessions will be signed out."><input id="np" className="input" type="password" autoComplete="new-password" value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} /></Field>
+          <Field label="New password" htmlFor="np" hint="At least 10 characters."><input id="np" className="input" type="password" autoComplete="new-password" value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} /></Field>
           <div className="row"><span className="spacer" /><button className="btn primary" disabled={busy !== null || pw.newPassword.length < 10}>{busy === 'pw' ? <Spinner /> : 'Update password'}</button></div>
         </form>
 
@@ -71,7 +71,6 @@ export function Account() {
               : providers.data?.google ? <a className="btn sm" href="/api/v1/auth/google/start?mode=link">Connect Google</a>
               : <span className="subtle">Not available on this server</span>}
           </div>
-          <p className="subtle">Single sign-on (SAML/OIDC) for organizations is planned for a later release.</p>
         </div>
 
         <div className="card">

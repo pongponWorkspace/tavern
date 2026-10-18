@@ -44,7 +44,8 @@ export async function onboardingRoutes(app: FastifyInstance) {
     );
     const steps = await query(
       pool,
-      `SELECT s.id, s.template_id, s.title, s.instructions, s.sort_order, s.is_required, op.status AS progress, op.completed_at,
+      `SELECT s.id, s.template_id, s.title, s.instructions, s.sort_order, s.is_required, op.status AS progress, op.completed_at, s.due_days,
+              CASE WHEN s.due_days IS NOT NULL THEN pm.joined_at + make_interval(days => s.due_days) END AS due_at,
               CASE WHEN ki.id IS NOT NULL AND ki.status = 'active' AND ${visibleTo('ki', '$2::text')} THEN ki.id END AS item_id,
               CASE WHEN ki.id IS NOT NULL AND ki.status = 'active' AND ${visibleTo('ki', '$2::text')} THEN ki.title END AS item_title,
               CASE WHEN ki.id IS NOT NULL AND ki.status = 'active' AND ${visibleTo('ki', '$2::text')} THEN ki.type END AS item_type
@@ -52,6 +53,7 @@ export async function onboardingRoutes(app: FastifyInstance) {
          JOIN onboarding_templates t ON t.id = s.template_id
          LEFT JOIN knowledge_items ki ON ki.id = s.knowledge_item_id
          LEFT JOIN onboarding_progress op ON op.step_id = s.id AND op.user_id = $3
+         LEFT JOIN project_memberships pm ON pm.project_id = t.project_id AND pm.user_id = $3
         WHERE t.project_id = $1 AND t.status = 'active' AND (t.target_role IS NULL OR t.target_role = $2)
         ORDER BY s.sort_order, s.created_at`,
       [projectId, access.role, u.id],
@@ -68,6 +70,7 @@ export async function onboardingRoutes(app: FastifyInstance) {
           .map((s) => ({
             id: s.id, title: s.title, instructions: s.instructions, sortOrder: s.sort_order, isRequired: s.is_required,
             completed: s.progress === 'completed', completedAt: s.completed_at,
+            dueAt: s.due_at, overdue: Boolean(s.due_at) && s.progress !== 'completed' && new Date(s.due_at) < new Date(),
             resource: s.item_id ? { id: s.item_id, title: s.item_title, type: s.item_type } : null,
           })),
       })),
@@ -92,7 +95,7 @@ export async function onboardingRoutes(app: FastifyInstance) {
       data: templates.map((t) => ({
         id: t.id, name: t.name, description: t.description, targetRole: t.target_role, status: t.status,
         steps: steps.filter((s) => s.template_id === t.id).map((s) => ({
-          id: s.id, title: s.title, instructions: s.instructions, sortOrder: s.sort_order, isRequired: s.is_required,
+          id: s.id, title: s.title, instructions: s.instructions, sortOrder: s.sort_order, isRequired: s.is_required, dueDays: s.due_days,
           resource: s.item_id ? { id: s.item_id, title: s.item_title } : s.knowledge_item_id ? { id: null, title: null, hidden: true } : null,
         })),
       })),
@@ -146,6 +149,7 @@ export async function onboardingRoutes(app: FastifyInstance) {
     const body = parse(z.object({
       title: z.string().trim().min(1).max(200), instructions: z.string().trim().max(4000).default(''),
       knowledgeItemId: uuid.nullable().default(null), isRequired: z.boolean().default(true),
+      dueDays: z.number().int().min(1).max(365).nullable().default(null),
     }), req.body);
     const step = await tx(async (db) => {
       const t = await one(db, 'SELECT project_id FROM onboarding_templates WHERE id = $1', [templateId]);
@@ -156,9 +160,9 @@ export async function onboardingRoutes(app: FastifyInstance) {
       await assertLinkableItem(db, access, body.knowledgeItemId);
       const s = await one(
         db,
-        `INSERT INTO onboarding_steps (tenant_id, project_id, template_id, knowledge_item_id, title, instructions, is_required, sort_order)
-         VALUES ($1,$2,$3,$4,$5,$6,$7, (SELECT coalesce(max(sort_order),0)+1 FROM onboarding_steps WHERE template_id = $3)) RETURNING id`,
-        [access.tenantId, access.projectId, templateId, body.knowledgeItemId, body.title, body.instructions, body.isRequired],
+        `INSERT INTO onboarding_steps (tenant_id, project_id, template_id, knowledge_item_id, title, instructions, is_required, due_days, sort_order)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8, (SELECT coalesce(max(sort_order),0)+1 FROM onboarding_steps WHERE template_id = $3)) RETURNING id`,
+        [access.tenantId, access.projectId, templateId, body.knowledgeItemId, body.title, body.instructions, body.isRequired, body.dueDays],
       );
       await audit(db, req, { tenantId: access.tenantId, projectId: access.projectId, actorUserId: u.id, action: 'onboarding.step_created', targetType: 'onboarding_step', targetId: s.id });
       return s;
@@ -172,6 +176,7 @@ export async function onboardingRoutes(app: FastifyInstance) {
     const body = parse(z.object({
       title: z.string().trim().min(1).max(200).optional(), instructions: z.string().trim().max(4000).optional(),
       knowledgeItemId: uuid.nullable().optional(), isRequired: z.boolean().optional(), sortOrder: z.number().int().min(0).max(10000).optional(),
+      dueDays: z.number().int().min(1).max(365).nullable().optional(),
     }), req.body);
     await tx(async (db) => {
       const { access } = await loadStep(db, u.id, stepId);
@@ -182,8 +187,10 @@ export async function onboardingRoutes(app: FastifyInstance) {
         db,
         `UPDATE onboarding_steps SET title = coalesce($2, title), instructions = coalesce($3, instructions),
                 knowledge_item_id = CASE WHEN $4 THEN $5::uuid ELSE knowledge_item_id END,
-                is_required = coalesce($6, is_required), sort_order = coalesce($7, sort_order), updated_at = now() WHERE id = $1`,
-        [stepId, body.title ?? null, body.instructions ?? null, body.knowledgeItemId !== undefined, body.knowledgeItemId ?? null, body.isRequired ?? null, body.sortOrder ?? null],
+                is_required = coalesce($6, is_required), sort_order = coalesce($7, sort_order),
+                due_days = CASE WHEN $8 THEN $9::int ELSE due_days END, updated_at = now() WHERE id = $1`,
+        [stepId, body.title ?? null, body.instructions ?? null, body.knowledgeItemId !== undefined, body.knowledgeItemId ?? null, body.isRequired ?? null, body.sortOrder ?? null,
+         body.dueDays !== undefined, body.dueDays ?? null],
       );
       await audit(db, req, { tenantId: access.tenantId, projectId: access.projectId, actorUserId: u.id, action: 'onboarding.step_updated', targetType: 'onboarding_step', targetId: stepId, metadata: { fields: Object.keys(body) } });
     });
@@ -231,7 +238,9 @@ export async function onboardingRoutes(app: FastifyInstance) {
       pool,
       `SELECT u.id, u.display_name, pm.role, pm.joined_at,
               count(s.id) FILTER (WHERE s.is_required)::int AS required,
-              count(s.id) FILTER (WHERE s.is_required AND op.status = 'completed')::int AS completed
+              count(s.id) FILTER (WHERE s.is_required AND op.status = 'completed')::int AS completed,
+              count(s.id) FILTER (WHERE s.is_required AND s.due_days IS NOT NULL AND coalesce(op.status, '') <> 'completed'
+                                    AND pm.joined_at + make_interval(days => s.due_days) < now())::int AS overdue
          FROM project_memberships pm JOIN users u ON u.id = pm.user_id
          LEFT JOIN onboarding_templates t ON t.project_id = pm.project_id AND t.status = 'active' AND (t.target_role IS NULL OR t.target_role = pm.role)
          LEFT JOIN onboarding_steps s ON s.template_id = t.id
@@ -240,6 +249,6 @@ export async function onboardingRoutes(app: FastifyInstance) {
         GROUP BY u.id, u.display_name, pm.role, pm.joined_at ORDER BY pm.joined_at DESC`,
       [projectId],
     );
-    return { data: rows.map((r) => ({ userId: r.id, displayName: r.display_name, role: r.role, joinedAt: r.joined_at, required: r.required, completed: r.completed })) };
+    return { data: rows.map((r) => ({ userId: r.id, displayName: r.display_name, role: r.role, joinedAt: r.joined_at, required: r.required, completed: r.completed, overdue: r.overdue })) };
   });
 }

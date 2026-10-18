@@ -11,6 +11,8 @@ import { pool } from './db/pool.js';
 import { AppError } from './lib/errors.js';
 import { randomToken, safeEqual } from './lib/crypto.js';
 import { resolveSession } from './auth/session.js';
+import { storage } from './storage/index.js';
+import { requestContext } from './lib/request-context.js';
 import type { SessionUser } from './authz/context.js';
 import { authRoutes } from './auth/routes.js';
 import { meRoutes } from './modules/me.js';
@@ -66,7 +68,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'"],
+        // Direct-to-bucket uploads (S3/R2) need the bucket's origin; downloads are top-level navigations.
+        connectSrc: ["'self'", ...(storage().browserOrigin ? [storage().browserOrigin!] : [])],
         frameAncestors: ["'none'"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
@@ -85,6 +88,13 @@ export async function buildApp(): Promise<FastifyInstance> {
       }),
     });
   }
+
+  // Request context for helpers deep in the call stack (runs before every other hook).
+  app.addHook('onRequest', (req, _reply, done) => {
+    const h = req.headers['x-preview-role'];
+    const previewRole = h === 'maintainer' || h === 'member' || h === 'viewer' ? h : undefined;
+    requestContext.run({ method: req.method, previewRole }, done);
+  });
 
   app.decorateRequest('user', null);
   app.decorateRequest('csrfToken', null);

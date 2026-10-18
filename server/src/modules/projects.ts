@@ -106,6 +106,8 @@ export async function projectRoutes(app: FastifyInstance) {
       workspace: { id: p.workspace_id, name: p.workspace_name, status: p.workspace_status },
       owner: p.owner_user_id ? { id: p.owner_user_id, displayName: p.owner_name, avatarUrl: p.owner_avatar } : null,
       myRole: access.role,
+      actualRole: access.actualRole,
+      previewing: access.previewing,
       rolePermissions: access.permissions,
       permissions: Object.fromEntries(
         PERMISSION_KEYS.map((k) => [k, projectCan(access.role, k, access.permissions) && (access.writable || k === 'audit.view' || k === 'knowledge.view_archived' || k === 'project.archive')]),
@@ -146,6 +148,120 @@ export async function projectRoutes(app: FastifyInstance) {
       counts,
       categories: categories.map((c) => ({ id: c.id, name: c.name, itemCount: c.item_count })),
       onboarding,
+    };
+  });
+
+  // Start a new project from this one (P1 "project templates"): structure always, links and documents optionally.
+  app.post('/projects/:projectId/duplicate', async (req, reply) => {
+    const u = requireUser(req);
+    const { projectId } = parse(z.object({ projectId: uuid }), req.params);
+    const body = parse(z.object({ name: z.string().trim().min(2).max(80), includeContent: z.boolean().default(true) }), req.body);
+    const created = await tx(async (db) => {
+      const src = await requireProject(db, u.id, projectId, 'project.edit');
+      await requireTenant(db, u.id, src.tenantId, 'project.create').catch((e) => {
+        throw e.status === 404 ? notFound('project') : e;
+      });
+      const ws = await one(db, `SELECT status FROM workspaces WHERE id = $1`, [src.workspaceId]);
+      if (ws.status !== 'active') throw readOnly();
+      const p = await one(db, `SELECT * FROM projects WHERE id = $1`, [projectId]);
+      let slug = slugify(body.name);
+      if (await one(db, 'SELECT 1 FROM projects WHERE workspace_id = $1 AND slug = $2', [src.workspaceId, slug])) slug = `${slug}-${randomToken(3).toLowerCase()}`;
+      const np = await one(
+        db,
+        `INSERT INTO projects (tenant_id, workspace_id, name, slug, description, contact, owner_user_id, created_by, role_permissions)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$7,$8) RETURNING id`,
+        [src.tenantId, src.workspaceId, body.name, slug, p.description, p.contact, u.id, p.role_permissions],
+      );
+      const newId: string = np.id;
+      await query(db, `INSERT INTO project_memberships (tenant_id, project_id, user_id, role) VALUES ($1,$2,$3,'project_admin')`, [src.tenantId, newId, u.id]);
+
+      const catMap = new Map<string, string>();
+      for (const c of await query(db, `SELECT * FROM knowledge_categories WHERE project_id = $1 ORDER BY sort_order`, [projectId])) {
+        const nc = await one(db, `INSERT INTO knowledge_categories (tenant_id, project_id, name, slug, description, sort_order) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+          [src.tenantId, newId, c.name, c.slug, c.description, c.sort_order]);
+        catMap.set(c.id, nc.id);
+      }
+
+      const itemMap = new Map<string, string>();
+      if (body.includeContent) {
+        const tagMap = new Map<string, string>();
+        const items = await query(db, `SELECT * FROM knowledge_items WHERE project_id = $1 AND status = 'active' AND type IN ('external_link','internal_document') ORDER BY created_at`, [projectId]);
+        for (const it of items) {
+          const ni = await one(
+            db,
+            `INSERT INTO knowledge_items (tenant_id, project_id, category_id, type, title, description, external_url, normalized_url, owner_user_id, created_by, updated_by, is_pinned)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9,$9,$10) RETURNING id`,
+            [src.tenantId, newId, it.category_id ? catMap.get(it.category_id) ?? null : null, it.type, it.title, it.description, it.external_url, it.normalized_url, u.id, it.is_pinned],
+          );
+          itemMap.set(it.id, ni.id);
+          if (it.type === 'internal_document') {
+            const d = await one(db, `SELECT content_md FROM knowledge_documents WHERE knowledge_item_id = $1`, [it.id]);
+            const content = d?.content_md ?? '';
+            await query(db, `INSERT INTO knowledge_documents (knowledge_item_id, tenant_id, project_id, content_md, updated_by) VALUES ($1,$2,$3,$4,$5)`, [ni.id, src.tenantId, newId, content, u.id]);
+            await query(db, `INSERT INTO knowledge_document_revisions (tenant_id, project_id, knowledge_item_id, content_md, created_by) VALUES ($1,$2,$3,$4,$5)`, [src.tenantId, newId, ni.id, content, u.id]);
+          }
+          for (const t of await query(db, `SELECT tg.name, tg.slug FROM knowledge_item_tags it JOIN knowledge_tags tg ON tg.id = it.tag_id WHERE it.knowledge_item_id = $1`, [it.id])) {
+            if (!tagMap.has(t.slug)) {
+              const nt = await one(db, `INSERT INTO knowledge_tags (tenant_id, project_id, name, slug) VALUES ($1,$2,$3,$4) RETURNING id`, [src.tenantId, newId, t.name, t.slug]);
+              tagMap.set(t.slug, nt.id);
+            }
+            await query(db, `INSERT INTO knowledge_item_tags (project_id, knowledge_item_id, tag_id) VALUES ($1,$2,$3)`, [newId, ni.id, tagMap.get(t.slug)]);
+          }
+          await query(
+            db,
+            `INSERT INTO knowledge_item_access_rules (tenant_id, project_id, knowledge_item_id, role, can_view, can_edit, can_archive, created_by, updated_by)
+             SELECT $1, $2, $3, role, can_view, can_edit, can_archive, $4, $4 FROM knowledge_item_access_rules WHERE knowledge_item_id = $5`,
+            [src.tenantId, newId, ni.id, u.id, it.id],
+          );
+        }
+      }
+
+      for (const t of await query(db, `SELECT * FROM onboarding_templates WHERE project_id = $1 AND status = 'active' ORDER BY created_at`, [projectId])) {
+        const nt = await one(db, `INSERT INTO onboarding_templates (tenant_id, project_id, name, description, target_role, created_by, updated_by) VALUES ($1,$2,$3,$4,$5,$6,$6) RETURNING id`,
+          [src.tenantId, newId, t.name, t.description, t.target_role, u.id]);
+        for (const st of await query(db, `SELECT * FROM onboarding_steps WHERE template_id = $1 ORDER BY sort_order, created_at`, [t.id])) {
+          await query(
+            db,
+            `INSERT INTO onboarding_steps (tenant_id, project_id, template_id, knowledge_item_id, title, instructions, sort_order, is_required, due_days) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+            [src.tenantId, newId, nt.id, st.knowledge_item_id ? itemMap.get(st.knowledge_item_id) ?? null : null, st.title, st.instructions, st.sort_order, st.is_required, st.due_days],
+          );
+        }
+      }
+
+      await audit(db, req, {
+        tenantId: src.tenantId, projectId: newId, actorUserId: u.id, action: 'project.created', targetType: 'project', targetId: newId,
+        metadata: { name: body.name, duplicatedFrom: p.name, items: itemMap.size },
+      });
+      return { id: newId };
+    });
+    return reply.status(201).send(created);
+  });
+
+  // Things a Project Admin should act on: invitation links about to expire, files that failed the scan.
+  app.get('/projects/:projectId/attention', async (req) => {
+    const u = requireUser(req);
+    const { projectId } = parse(z.object({ projectId: uuid }), req.params);
+    await requireProject(pool, u.id, projectId, 'members.manage');
+    const [invites, files] = await Promise.all([
+      query(
+        pool,
+        `SELECT id, target_role, email_restriction, expires_at, use_count, max_uses FROM invitations
+          WHERE project_id = $1 AND status = 'active' AND expires_at > now() AND expires_at < now() + interval '48 hours'
+          ORDER BY expires_at`,
+        [projectId],
+      ),
+      query(
+        pool,
+        `SELECT f.id, f.safe_filename, f.scan_status, ki.id AS item_id, ki.title
+           FROM files f LEFT JOIN knowledge_items ki ON ki.file_id = f.id AND ki.status <> 'deleted'
+          WHERE f.project_id = $1 AND f.deleted_at IS NULL AND f.scan_status IN ('quarantined','failed')
+          ORDER BY f.created_at DESC LIMIT 20`,
+        [projectId],
+      ),
+    ]);
+    return {
+      expiringInvitations: invites.map((i) => ({ id: i.id, role: i.target_role, email: i.email_restriction, expiresAt: i.expires_at, useCount: i.use_count, maxUses: i.max_uses })),
+      blockedFiles: files.map((f) => ({ id: f.id, filename: f.safe_filename, scanStatus: f.scan_status, item: f.item_id ? { id: f.item_id, title: f.title } : null })),
     };
   });
 

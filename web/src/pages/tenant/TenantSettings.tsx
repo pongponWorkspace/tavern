@@ -3,7 +3,7 @@ import { NavLink, Navigate, useParams } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Link2, Lock } from 'lucide-react';
 import { api, type TenantRole } from '../../api';
-import { fullDate, TENANT_ROLE_LABEL, timeAgo } from '../../lib/format';
+import { bytes, fullDate, TENANT_ROLE_LABEL, timeAgo } from '../../lib/format';
 import { useMe } from '../../lib/session';
 import { AuditLog } from '../../components/AuditLog';
 import { Avatar, ConfirmDialog, TenantRoleBadge, Empty, ErrorAlert, Field, Spinner, errorText, useToast } from '../../components/ui';
@@ -36,9 +36,6 @@ export function TenantSettings() {
       <div className="page-head">
         <div>
           <h1>{tenant.name}</h1>
-          <p className="lede">
-            Organization settings. You are the organization’s <strong>{TENANT_ROLE_LABEL[tenant.role]}</strong>. Project content stays private to each project’s members.
-          </p>
         </div>
       </div>
       <nav className="tabs" aria-label="Organization settings">
@@ -46,9 +43,7 @@ export function TenantSettings() {
       </nav>
       {tab === 'roles' && (
         <>
-          <p className="subtle" style={{ marginBottom: 14, maxWidth: 760 }}>
-            What each organization role can do. {perms.manageRoles ? 'Changes apply to everyone with that role on their next action.' : 'Only the Owner can change this table.'} Project content is controlled separately, in each project’s <em>Roles &amp; permissions</em> tab.
-          </p>
+          {!perms.manageRoles && <p className="subtle" style={{ marginBottom: 14 }}>Only the Owner can change this.</p>}
           <TenantRoleTable tenantId={tenantId} value={q.data.rolePermissions} editable={perms.manageRoles} myRole={tenant.role} />
         </>
       )}
@@ -57,7 +52,6 @@ export function TenantSettings() {
       {tab === 'invitations' && <TenantInvites tenant={q.data} />}
       {tab === 'audit' && (
         <>
-          <p className="subtle" style={{ marginBottom: 14 }}>Organization-level events: members, roles, workspaces and settings. Project activity is visible to each project's admins.</p>
           <AuditLog endpoint={`/tenants/${tenantId}/audit-logs`} />
         </>
       )}
@@ -93,11 +87,37 @@ function General({ tenant }: { tenant: any }) {
         <Field label="Organization name" htmlFor="on"><input id="on" className="input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
         <label className="check">
           <input type="checkbox" checked={allow} onChange={(e) => setAllow(e.target.checked)} />
-          <span><strong>Project invitations can bring in new people</strong><br /><span className="subtle">When on, accepting a project invitation also adds the person to this organization as a Member. When off, only existing organization members can join projects.</span></span>
+          <span><strong>Project invitations can bring in new people</strong><br /><span className="subtle">Accepting a project invitation also adds the person to this organization.</span></span>
         </label>
         <div className="row"><span className="spacer" /><button className="btn primary" disabled={busy || name.trim().length < 2}>{busy ? <Spinner /> : 'Save'}</button></div>
       </form>
+      <StorageCard tenantId={tenant.id} />
       {tenant.permissions.transferOwnership && <TransferOwnership tenant={tenant} />}
+    </div>
+  );
+}
+
+function StorageCard({ tenantId }: { tenantId: string }) {
+  const q = useQuery({ queryKey: ['storage', tenantId], queryFn: () => api(`/tenants/${tenantId}/storage`) });
+  if (!q.data) return null;
+  const { used, limit, files, byProject } = q.data;
+  const pct = Math.min(100, Math.round((used / limit) * 100));
+  return (
+    <div className="card card-pad stack">
+      <div className="row"><h2>Storage</h2><span className="spacer" /><span className="subtle">{files} {files === 1 ? 'file' : 'files'}</span></div>
+      <div>
+        <div className="row" style={{ marginBottom: 6 }}><strong>{bytes(used)}</strong><span className="subtle">of {bytes(limit)}</span><span className="spacer" /><span className="subtle">{pct}%</span></div>
+        <div className={`progress ${pct >= 90 ? 'danger' : ''}`} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Storage used"><span style={{ width: `${Math.max(pct, used ? 1 : 0)}%` }} /></div>
+      </div>
+      {byProject.length > 0 && (
+        <table className="table">
+          <tbody>
+            {byProject.map((p: any) => (
+              <tr key={p.id}><td>{p.name}</td><td className="muted" style={{ textAlign: 'right' }}>{p.files} {p.files === 1 ? 'file' : 'files'}</td><td style={{ textAlign: 'right', width: 90 }}>{bytes(p.used)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
@@ -112,7 +132,7 @@ function TransferOwnership({ tenant }: { tenant: any }) {
   const name = candidates.find((m: any) => m.userId === target)?.displayName;
   return (
     <div className="card card-pad form">
-      <div><h2>Transfer ownership</h2><p className="muted" style={{ marginTop: 4 }}>The new owner gets full control. You'll become an Admin.</p></div>
+      <div><h2>Transfer ownership</h2><p className="muted" style={{ marginTop: 4 }}>You'll become an Admin.</p></div>
       <div className="row">
         <select className="select" value={target} onChange={(e) => setTarget(e.target.value)} aria-label="New owner">
           <option value="">Choose a member…</option>
@@ -192,7 +212,6 @@ function TenantMembers({ tenant }: { tenant: any }) {
           </tbody>
         </table>
       </div>
-      <p className="subtle" style={{ marginTop: 12 }}>Suspending blocks access to the organization and all of its projects until reactivated. Removing also removes the person from every project.</p>
       <ConfirmDialog open={Boolean(removing)} title={`Remove ${removing?.displayName}?`} confirmLabel="Remove from organization" danger onClose={() => setRemoving(null)}
         onConfirm={() => { const m = removing; setRemoving(null); run(() => api(`/tenants/${tenant.id}/members/${m.userId}`, { method: 'DELETE' }), `${m.displayName} removed`); }}>
         They'll lose access to {tenant.name} and every project in it, immediately.

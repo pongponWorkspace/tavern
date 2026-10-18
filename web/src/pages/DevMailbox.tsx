@@ -16,7 +16,7 @@ export function DevMailbox() {
       <div className="page-head">
         <div>
           <h1>Dev mailbox</h1>
-          <p className="lede">Emails the server would send. Development only — not available in production.</p>
+          <p className="lede">Development only.</p>
         </div>
       </div>
       <ErrorAlert error={q.error} />

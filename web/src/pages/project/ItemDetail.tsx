@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, ArchiveRestore, ArrowLeft, Download, Eye, Lock, Pencil, Pin, PinOff, ShieldAlert, Trash2 } from 'lucide-react';
+import { Archive, ArchiveRestore, ArrowLeft, Download, Eye, History, Lock, Pencil, Pin, PinOff, ShieldAlert, Trash2 } from 'lucide-react';
 import { api, ApiError, type ItemDetail } from '../../api';
 import { bytes, fullDate, PROJECT_ROLE_LABEL, timeAgo, TYPE_LABEL } from '../../lib/format';
 import { Markdown } from '../../components/Markdown';
 import { ScanBadge } from '../../components/Knowledge';
-import { Alert, Avatar, ConfirmDialog, ErrorAlert, OpenLink, Spinner, TypeIcon, errorText, useToast } from '../../components/ui';
+import { Alert, Avatar, ConfirmDialog, ErrorAlert, Modal, OpenLink, Spinner, TypeIcon, errorText, useToast } from '../../components/ui';
 import { DetailSkeleton, DocSkeleton } from '../../components/Skeletons';
 import { NotFound } from '../NotFound';
 import { KnowledgeFormModal } from './KnowledgeForm';
@@ -61,7 +61,6 @@ export function ItemDetailPage() {
 
   return (
     <div>
-      <Link to={`/p/${p.id}/knowledge`} className="btn ghost sm" style={{ marginBottom: 12, marginLeft: -8 }}><ArrowLeft size={15} /> Knowledge</Link>
 
       <div className="grid-2" style={{ gridTemplateColumns: 'minmax(0, 1fr) 300px', alignItems: 'start', gap: 28 }}>
         <article style={{ minWidth: 0 }}>
@@ -101,7 +100,7 @@ export function ItemDetailPage() {
           </div>
 
           {item.type === 'external_link' && (
-            <p className="subtle" style={{ marginTop: 10, overflowWrap: 'anywhere' }}>{item.externalUrl} — access to the destination is managed by that tool.</p>
+            <p className="subtle" style={{ marginTop: 10, overflowWrap: 'anywhere' }}>{item.externalUrl}</p>
           )}
           {item.file?.scanStatus === 'pending' && <div style={{ marginTop: 16 }}><Alert tone="info">This file is being scanned. Download becomes available when the check passes.</Alert></div>}
           {(item.file?.scanStatus === 'quarantined' || item.file?.scanStatus === 'failed') && (
@@ -157,6 +156,7 @@ function DocumentBody({ item }: { item: ItemDetail }) {
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [saving, setSaving] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const dirty = draft !== null && draft !== q.data?.content;
 
   useEffect(() => {
@@ -176,6 +176,7 @@ function DocumentBody({ item }: { item: ItemDetail }) {
       await api(`/knowledge/${item.id}/content`, { method: 'PUT', body: { content: draft, version: q.data.version } });
       await qc.invalidateQueries({ queryKey: ['doc', item.id] });
       await qc.invalidateQueries({ queryKey: ['item', item.id] });
+      await qc.invalidateQueries({ queryKey: ['revisions', item.id] });
       setDraft(null);
       toast('Document saved');
     } catch (e) {
@@ -210,11 +211,67 @@ function DocumentBody({ item }: { item: ItemDetail }) {
       <div className="row" style={{ marginBottom: 12 }}>
         <span className="subtle">{q.data.updatedBy ? `Last edited by ${q.data.updatedBy.displayName} ${timeAgo(q.data.updatedAt)}` : ''}</span>
         <span className="spacer" />
-        {item.permissions.edit && item.status === 'active' && <button className="btn sm" onClick={() => setDraft(q.data.content)}><Pencil size={14} /> Edit document</button>}
+        <button className="btn sm ghost" onClick={() => setHistoryOpen(true)}><History size={14} /> History</button>
+        {item.permissions.edit && item.status === 'active' && <button className="btn sm" onClick={() => setDraft(q.data.content)}><Pencil size={14} /> Edit</button>}
       </div>
       <div className="card card-pad" style={{ padding: '24px 28px' }}>
-        {q.data.content.trim() ? <Markdown source={q.data.content} /> : <p className="subtle">This document is empty.{item.permissions.edit ? ' Click “Edit document” to start writing.' : ''}</p>}
+        {q.data.content.trim() ? <Markdown source={q.data.content} /> : <p className="subtle">Empty document.</p>}
       </div>
+      {historyOpen && <HistoryModal item={item} version={q.data.version} onClose={() => setHistoryOpen(false)} />}
     </div>
+  );
+}
+
+/** Past versions of a document: pick one to read it, restore it if you can edit. */
+function HistoryModal({ item, version, onClose }: { item: ItemDetail; version: number; onClose: () => void }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const list = useQuery({ queryKey: ['revisions', item.id], queryFn: () => api(`/knowledge/${item.id}/revisions`) });
+  const [selected, setSelected] = useState<string | null>(null);
+  const current = list.data?.data[0]?.id;
+  const shown = selected ?? current;
+  const rev = useQuery({ queryKey: ['revision', shown], queryFn: () => api(`/knowledge/${item.id}/revisions/${shown}`), enabled: Boolean(shown) });
+  const [busy, setBusy] = useState(false);
+  const canRestore = item.permissions.edit && item.status === 'active' && shown && shown !== current;
+
+  const restore = async () => {
+    setBusy(true);
+    try {
+      await api(`/knowledge/${item.id}/revisions/${shown}/restore`, { body: { version } });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['doc', item.id] }),
+        qc.invalidateQueries({ queryKey: ['item', item.id] }),
+        qc.invalidateQueries({ queryKey: ['revisions', item.id] }),
+      ]);
+      toast('Version restored');
+      onClose();
+    } catch (e) {
+      toast(errorText(e), 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal open onClose={onClose} title="History" wide
+      footer={<><button className="btn" onClick={onClose}>Close</button>{canRestore && <button className="btn primary" onClick={restore} disabled={busy}>{busy ? <Spinner /> : 'Restore this version'}</button>}</>}>
+      <div className="history">
+        <ul className="history-list" aria-label="Versions">
+          {list.isLoading && <li className="subtle" style={{ padding: 12 }}><Spinner /></li>}
+          {list.data?.data.map((r: any) => (
+            <li key={r.id}>
+              <button className={r.id === shown ? 'on' : ''} onClick={() => setSelected(r.id)} aria-pressed={r.id === shown}>
+                <span className="history-when" title={fullDate(r.createdAt)}>{timeAgo(r.createdAt)}</span>
+                <span className="subtle">{r.author.displayName}</span>
+                {r.current ? <span className="badge accent">Current</span> : r.restored ? <span className="badge">Restored</span> : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="history-preview">
+          {rev.isLoading ? <Spinner /> : rev.data ? (rev.data.content.trim() ? <Markdown source={rev.data.content} /> : <p className="subtle">Empty.</p>) : null}
+        </div>
+      </div>
+    </Modal>
   );
 }

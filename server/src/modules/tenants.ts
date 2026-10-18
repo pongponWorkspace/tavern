@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { config } from '../config.js';
 import { one, pool, query, tx } from '../db/pool.js';
 import { conflict, forbidden, notFound } from '../lib/errors.js';
 import { parse, uuid } from '../lib/validate.js';
@@ -70,6 +71,27 @@ export async function tenantRoutes(app: FastifyInstance) {
       // Everyone in the organization can see what each role may do (read-only unless Owner).
       rolePermissions: access.permissions,
       ...(viewSettings ? { settings: { projectInvitesAddTenantMembers: t.project_invites_add_tenant_members } } : {}),
+    };
+  });
+
+  // Storage used by this organization's files (live, not-deleted objects), with a per-project breakdown.
+  app.get('/tenants/:tenantId/storage', async (req) => {
+    const u = requireUser(req);
+    const { tenantId } = parse(tenantParams, req.params);
+    await requireTenant(pool, u.id, tenantId, 'tenant.view_settings');
+    const rows = await query(
+      pool,
+      `SELECT p.id, p.name, count(f.id)::int AS files, coalesce(sum(f.size_bytes),0)::bigint AS used
+         FROM projects p LEFT JOIN files f ON f.project_id = p.id AND f.deleted_at IS NULL
+        WHERE p.tenant_id = $1 GROUP BY p.id, p.name HAVING count(f.id) > 0 ORDER BY used DESC LIMIT 20`,
+      [tenantId],
+    );
+    const total = await one(pool, `SELECT count(*)::int AS files, coalesce(sum(size_bytes),0)::bigint AS used FROM files WHERE tenant_id = $1 AND deleted_at IS NULL`, [tenantId]);
+    return {
+      used: Number(total.used),
+      files: total.files,
+      limit: config.uploads.tenantQuotaBytes,
+      byProject: rows.map((r) => ({ id: r.id, name: r.name, files: r.files, used: Number(r.used) })),
     };
   });
 

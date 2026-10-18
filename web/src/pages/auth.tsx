@@ -89,7 +89,7 @@ export function Login() {
   return (
     <AuthLayout>
       <h1>Welcome back</h1>
-      <p className="muted" style={{ marginBottom: 24 }}>Sign in to your Tavern account.</p>
+      <div style={{ marginBottom: 24 }} />
       {oauthError && <div style={{ marginBottom: 16 }}><Alert tone="danger">{GOOGLE_ERRORS[oauthError] ?? GOOGLE_ERRORS.google_failed}</Alert></div>}
       <div className="form">
         <GoogleButton next={next} />
@@ -144,7 +144,7 @@ export function Register() {
   return (
     <AuthLayout>
       <h1>Create your account</h1>
-      <p className="muted" style={{ marginBottom: 24 }}>You can start an organization or join one from an invitation.</p>
+      <div style={{ marginBottom: 24 }} />
       <div className="form">
         <GoogleButton next={next} />
         <form className="form" onSubmit={submit} noValidate>
@@ -191,7 +191,7 @@ export function ForgotPassword() {
   return (
     <AuthLayout>
       <h1>Reset your password</h1>
-      <p className="muted" style={{ marginBottom: 24 }}>We'll email you a link that works once and expires in 30 minutes.</p>
+      <p className="muted" style={{ marginBottom: 24 }}>We'll email you a reset link.</p>
       {done ? (
         <div className="form">
           <Alert tone="ok">If an account exists for <strong>{email}</strong>, a reset link is on its way.</Alert>

@@ -587,6 +587,7 @@ dialog.modal::backdrop { background: var(--color-backdrop); }
 .progress { height: 8px; border-radius: var(--radius-full); background: var(--color-surface-sunken); overflow: hidden; }
 .progress > span { display: block; height: 100%; background: var(--color-accent-emphasis); border-radius: inherit; transition: width var(--duration-slow) var(--ease-out); }
 .progress.success > span { background: var(--color-success-emphasis); }
+.progress.danger > span { background: var(--color-danger-emphasis); }
 .checklist { display: flex; flex-direction: column; }
 .check-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-4); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-border-muted); align-items: start; }
 .check-item:last-child { border-bottom: 0; }
@@ -719,3 +720,31 @@ dialog.modal::backdrop { background: var(--color-backdrop); }
 /* Settings sits at the bottom of the sidebar, just above the account menu. */
 .nav.nav-bottom { margin-top: auto; padding-top: var(--space-4); }
 .nav.nav-bottom + .sidebar-foot { margin-top: var(--space-3); }
+
+/* ───────── Document history ───────── */
+.history { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--space-5); min-height: 360px; }
+.history-list { list-style: none; margin: 0; padding: 0; border-right: 1px solid var(--color-border-muted); padding-right: var(--space-3); max-height: 60vh; overflow-y: auto; }
+.history-list button { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border: 0; border-radius: var(--radius-md); background: none; text-align: left; cursor: pointer; color: var(--color-fg); }
+.history-list button:hover { background: var(--color-surface-hover); }
+.history-list button.on { background: var(--color-surface-selected); }
+.history-list .badge { margin-top: 4px; }
+.history-when { font-weight: var(--weight-semibold); font-size: var(--text-md); }
+.history-preview { max-height: 60vh; overflow-y: auto; }
+@media (max-width: 640px) { .history { grid-template-columns: 1fr; } .history-list { border-right: 0; padding-right: 0; max-height: 160px; } }
+
+/* ───────── View as (role preview) ───────── */
+.view-as { gap: var(--space-3); }
+.view-as .select { width: auto; height: var(--control-sm); padding-right: 28px; font-size: var(--text-sm); }
+.preview-bar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5); padding: var(--space-3) var(--space-5); border: 1px solid var(--color-accent-muted); border-radius: var(--radius-lg); background: var(--color-accent-subtle); color: var(--color-accent-fg); font-size: var(--text-md); }
+.preview-bar strong { color: var(--color-fg); }
+
+/* ───────── Needs attention (project admins) ───────── */
+.attention { margin-top: var(--space-6); border-color: var(--color-attention-muted); }
+.attention .card-head { border-bottom-color: var(--color-border-muted); }
+.attention h3 { display: flex; align-items: center; gap: 8px; color: var(--color-attention-fg); }
+.attention ul { list-style: none; margin: 0; padding: 0; }
+.attention li { display: flex; align-items: center; gap: 10px; padding: 10px var(--space-5); border-bottom: 1px solid var(--color-border-muted); font-size: var(--text-md); }
+.attention li:last-child { border-bottom: 0; }
+.attention li > .lucide { flex: none; color: var(--color-fg-subtle); }
+.attention li > span { flex: 1; min-width: 0; }
+@media (min-width: 901px) { .mobile-only { display: none !important; } }

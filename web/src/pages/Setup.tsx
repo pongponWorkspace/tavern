@@ -86,26 +86,26 @@ export function Setup() {
         <form className="card card-pad form" onSubmit={submit}>
           {step === 0 && (
             <>
-              <div><h1>Create your organization</h1><p className="muted" style={{ marginTop: 6 }}>Your organization is a private space for your team. Nothing in it is visible to other organizations.</p></div>
+              <div><h1>Create your organization</h1></div>
               <Field label="Organization name" htmlFor="org"><input id="org" className="input" value={org} onChange={(e) => setOrg(e.target.value)} placeholder="Acme Studio" autoFocus /></Field>
             </>
           )}
           {step === 1 && (
             <>
-              <div><h1>Add a workspace</h1><p className="muted" style={{ marginTop: 6 }}>Workspaces group projects — by product, department or client.</p></div>
+              <div><h1>Add a workspace</h1><p className="muted" style={{ marginTop: 6 }}>Group projects by product, team or client.</p></div>
               <Field label="Workspace name" htmlFor="ws"><input id="ws" className="input" value={ws} onChange={(e) => setWs(e.target.value)} autoFocus /></Field>
             </>
           )}
           {step === 2 && (
             <>
-              <div><h1>Create your first project</h1><p className="muted" style={{ marginTop: 6 }}>Each project gets its own knowledge hub, members and onboarding checklist. You'll be its Project Admin.</p></div>
+              <div><h1>Create your first project</h1></div>
               <Field label="Project name" htmlFor="pn"><input id="pn" className="input" value={proj.name} onChange={(e) => setProj({ ...proj, name: e.target.value })} placeholder="Atlas Mobile App" autoFocus /></Field>
-              <Field label="Description" htmlFor="pd" hint="Optional — shown at the top of the project page."><textarea id="pd" className="textarea" value={proj.description} onChange={(e) => setProj({ ...proj, description: e.target.value })} /></Field>
+              <Field label="Description" htmlFor="pd" hint="Optional"><textarea id="pd" className="textarea" value={proj.description} onChange={(e) => setProj({ ...proj, description: e.target.value })} /></Field>
             </>
           )}
           {step === 3 && (
             <>
-              <div><h1>Add a few key links</h1><p className="muted" style={{ marginTop: 6 }}>The links people ask for most — design files, repository, task board. They'll be pinned on the project page. You can skip this.</p></div>
+              <div><h1>Add a few key links</h1><p className="muted" style={{ marginTop: 6 }}>Pinned on the project page. Optional.</p></div>
               {links.map((l, i) => (
                 <div key={i} className="row" style={{ alignItems: 'flex-end' }}>
                   <Field label={i === 0 ? 'Title' : ''} htmlFor={`lt${i}`}><input id={`lt${i}`} className="input" value={l.title} placeholder="Figma design file" onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} /></Field>

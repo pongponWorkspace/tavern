@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, Check, ListChecks, Pencil, Plus, Settings, Trash2, X } from 'lucide-react';
 import { api, type ProjectRole } from '../../api';
 import { PROJECT_ROLE_LABEL } from '../../lib/format';
+
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 import { Empty, ErrorAlert, Field, Modal, Spinner, TypeIcon, errorText, useToast } from '../../components/ui';
 import { ChecklistSkeleton, PageHeadSkeleton } from '../../components/Skeletons';
 import { useProject } from './ProjectLayout';
@@ -43,17 +45,13 @@ export function OnboardingPage() {
     <div style={{ maxWidth: 820 }}>
       <div className="row wrap" style={{ marginBottom: 20, gap: 16 }}>
         <div style={{ flex: 1, minWidth: 240 }}>
-          <h2>Getting started on {p.name}</h2>
-          <p className="muted" style={{ marginTop: 4 }}>Your checklist for the {PROJECT_ROLE_LABEL[p.myRole]} role. Progress is saved — come back any time.</p>
+          <h2>Getting started</h2>
         </div>
-        {q.data.canManage && <Link className="btn" to={configure}><Settings size={15} /> Configure steps</Link>}
       </div>
 
       {templates.length === 0 ? (
         <div className="card">
-          <Empty icon={<ListChecks size={22} />} title="No onboarding checklist yet" action={q.data.canManage ? <Link className="btn primary" to={configure}><Plus size={15} /> Set up onboarding steps</Link> : undefined}>
-            {q.data.canManage ? 'Point new teammates at the resources they need first, in order.' : 'Your project hasn’t set one up. Start with the pinned items on the Overview.'}
-          </Empty>
+          <Empty icon={<ListChecks size={22} />} title="No onboarding steps yet" action={q.data.canManage ? <Link className="btn primary" to={configure}><Plus size={15} /> Add steps</Link> : undefined} />
         </div>
       ) : (
         <>
@@ -84,6 +82,8 @@ export function OnboardingPage() {
                         <div className="row wrap" style={{ gap: 8 }}>
                           <span className="check-title">{s.title}</span>
                           {!s.isRequired && <span className="badge">Optional</span>}
+                          {!s.completed && s.overdue && <span className="badge danger">Overdue</span>}
+                          {!s.completed && !s.overdue && s.dueAt && <span className="badge">Due {shortDate(s.dueAt)}</span>}
                         </div>
                         {s.instructions && <p className="muted" style={{ fontSize: 14, marginTop: 2 }}>{s.instructions}</p>}
                         {s.resource && (
@@ -156,14 +156,12 @@ export function OnboardingStepsEditor() {
       <div className="row wrap" style={{ marginBottom: 16, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 240 }}>
           <h2>Onboarding steps</h2>
-          <p className="muted" style={{ marginTop: 4 }}>The checklist every new member sees on the Onboarding tab. Add a role-only checklist when one role needs extra steps. Linked items only show to people who can see them.</p>
         </div>
         <button className="btn" onClick={() => setTemplateModal({})}><Plus size={15} /> Role-specific checklist</button>
       </div>
       {!everyone && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <Empty icon={<ListChecks size={20} />} title="No checklist for everyone yet" action={<button className="btn primary" onClick={createEveryone}><Plus size={15} /> Create the checklist</button>}>
-            Point new teammates at the resources they need first, in order.
+          <Empty icon={<ListChecks size={20} />} title="No steps yet" action={<button className="btn primary" onClick={createEveryone}><Plus size={15} /> Create the checklist</button>}>
           </Empty>
         </div>
       )}
@@ -187,7 +185,7 @@ export function OnboardingStepsEditor() {
                 <div key={s.id} className="row" style={{ padding: '12px 20px', borderBottom: '1px solid var(--color-border-muted)', alignItems: 'flex-start' }}>
                   <span className="subtle" style={{ width: 20, paddingTop: 2 }}>{i + 1}.</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="row wrap" style={{ gap: 8 }}><strong>{s.title}</strong>{!s.isRequired && <span className="badge">Optional</span>}</div>
+                    <div className="row wrap" style={{ gap: 8 }}><strong>{s.title}</strong>{!s.isRequired && <span className="badge">Optional</span>}{s.dueDays && <span className="badge">{s.dueDays} {s.dueDays === 1 ? 'day' : 'days'}</span>}</div>
                     {s.instructions && <p className="subtle">{s.instructions}</p>}
                     {s.resource && <p className="subtle" style={{ marginTop: 4 }}>Links to: {s.resource.hidden ? 'an item you can’t see' : s.resource.title}</p>}
                   </div>
@@ -256,21 +254,21 @@ function TemplateModal({ template, onClose, onSaved }: { template: any | null; o
 }
 
 function StepModal({ state, items, onClose, onSaved }: { state: { templateId: string; step?: any } | null; items: any[]; onClose: () => void; onSaved: () => void }) {
-  const [form, setForm] = useState({ title: '', instructions: '', knowledgeItemId: '', isRequired: true });
+  const [form, setForm] = useState({ title: '', instructions: '', knowledgeItemId: '', isRequired: true, dueDays: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [loadedFor, setLoadedFor] = useState<any>(null);
   if (state && loadedFor !== state) {
     setLoadedFor(state);
     const s = state.step;
-    setForm({ title: s?.title ?? '', instructions: s?.instructions ?? '', knowledgeItemId: s?.resource?.id ?? '', isRequired: s?.isRequired ?? true });
+    setForm({ title: s?.title ?? '', instructions: s?.instructions ?? '', knowledgeItemId: s?.resource?.id ?? '', isRequired: s?.isRequired ?? true, dueDays: s?.dueDays ? String(s.dueDays) : '' });
     setError(null);
   }
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const body = { ...form, knowledgeItemId: form.knowledgeItemId || null };
+      const body = { ...form, knowledgeItemId: form.knowledgeItemId || null, dueDays: form.dueDays ? Number(form.dueDays) : null };
       if (state?.step) await api(`/onboarding/steps/${state.step.id}`, { method: 'PATCH', body });
       else await api(`/onboarding/templates/${state!.templateId}/steps`, { body });
       onSaved();
@@ -287,14 +285,20 @@ function StepModal({ state, items, onClose, onSaved }: { state: { templateId: st
         <ErrorAlert error={error} />
         <Field label="Step" htmlFor="st"><input id="st" className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Read the welcome page" autoFocus /></Field>
         <Field label="Instructions" htmlFor="si" hint="Optional"><textarea id="si" className="textarea" value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} style={{ minHeight: 70 }} /></Field>
-        <Field label="Linked resource" htmlFor="sk" hint="Optional — must be an item from this project">
+        <Field label="Linked resource" htmlFor="sk" hint="Optional">
           <select id="sk" className="select" value={form.knowledgeItemId} onChange={(e) => setForm({ ...form, knowledgeItemId: e.target.value })}>
             <option value="">None</option>
             {items.map((i) => <option key={i.id} value={i.id}>{i.title}</option>)}
           </select>
         </Field>
+        <Field label="Due within" htmlFor="sd" hint="Days after joining. Optional.">
+          <div className="row" style={{ gap: 8 }}>
+            <input id="sd" className="input" type="number" min={1} max={365} inputMode="numeric" style={{ width: 100 }} value={form.dueDays} onChange={(e) => setForm({ ...form, dueDays: e.target.value })} />
+            <span className="subtle">days</span>
+          </div>
+        </Field>
         <label className="check"><input type="checkbox" checked={form.isRequired} onChange={(e) => setForm({ ...form, isRequired: e.target.checked })} /> Required step</label>
-        <div className="row"><span className="spacer" /><button type="button" className="btn" onClick={onClose}><X size={15} /> Cancel</button><button className="btn primary" disabled={busy || !form.title.trim()}>{busy ? <Spinner /> : 'Save step'}</button></div>
+        <div className="row"><span className="spacer" /><button type="button" className="btn" onClick={onClose}><X size={15} /> Cancel</button><button className="btn primary" disabled={busy || !form.title.trim() || (form.dueDays !== '' && !(Number(form.dueDays) >= 1 && Number(form.dueDays) <= 365))}>{busy ? <Spinner /> : 'Save step'}</button></div>
       </form>
     </Modal>
   );

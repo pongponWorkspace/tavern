@@ -26,7 +26,6 @@ export function Dashboard() {
       <div className="page-head">
         <div>
           <h1>{greet}, {me.data!.user.displayName.split(' ')[0]}</h1>
-          <p className="lede">Here's what's happening across your projects in {tenant.name}.</p>
         </div>
       </div>
       <ErrorAlert error={q.error} />
@@ -45,9 +44,7 @@ export function Dashboard() {
               title="You're not on any projects yet"
               action={isAdmin ? <Link className="btn primary" to={`/t/${tenantId}/workspaces`}>Create a project</Link> : undefined}
             >
-              {isAdmin
-                ? 'Create a project, then invite your team with a link. Organization admins only see project content once they are added to the project.'
-                : 'Ask a Project Admin to send you an invitation link to the project you work on.'}
+              {isAdmin ? null : 'Ask a Project Admin for an invitation link.'}
             </Empty>
           </div>
         ) : (
@@ -79,7 +76,7 @@ export function Dashboard() {
         <div className="section-head"><h2>Recently updated</h2></div>
         <div className="card">
           {q.isLoading ? <RowSkeleton /> : d.recentKnowledge.length === 0 ? (
-            <Empty icon={<Sparkles size={22} />} title="Nothing here yet">Links, files and documents you can access will show up here as your team adds them.</Empty>
+            <Empty icon={<Sparkles size={22} />} title="Nothing here yet" />
           ) : (
             <div className="k-list">{d.recentKnowledge.map((i: any) => <KnowledgeRow key={i.id} item={i} showProject />)}</div>
           )}

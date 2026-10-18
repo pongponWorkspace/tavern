@@ -64,7 +64,7 @@ function SaveBar({ dirty, busy, onSave, onDiscard }: { dirty: boolean; busy: boo
   if (!dirty) return null;
   return (
     <div className="save-bar" role="region" aria-label="Unsaved permission changes">
-      <span className="muted">You have unsaved changes. They apply to everyone with that role as soon as you save.</span>
+      <span className="muted">Unsaved changes</span>
       <span className="spacer" />
       <button className="btn" onClick={onDiscard} disabled={busy}>Discard</button>
       <button className="btn primary" onClick={onSave} disabled={busy}>{busy ? <Spinner /> : 'Save permissions'}</button>

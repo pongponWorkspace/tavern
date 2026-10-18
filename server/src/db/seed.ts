@@ -71,6 +71,7 @@ async function main() {
       )).id;
       if (o.type === 'internal_document') {
         await query(db, `INSERT INTO knowledge_documents (knowledge_item_id, tenant_id, project_id, content_md, updated_by, updated_at) VALUES ($1,$2,$3,$4,$5, now() - make_interval(days => $6))`, [id, acme, atlas, o.content ?? '', u[o.by], o.daysAgo]);
+        await query(db, `INSERT INTO knowledge_document_revisions (tenant_id, project_id, knowledge_item_id, content_md, created_by, created_at) VALUES ($1,$2,$3,$4,$5, now() - make_interval(days => $6))`, [acme, atlas, id, o.content ?? '', u[o.by], o.daysAgo]);
       }
       for (const t of o.tags) {
         if (!tagIds.has(t)) tagIds.set(t, (await one(db, `INSERT INTO knowledge_tags (tenant_id, project_id, name, slug) VALUES ($1,$2,$3,$3) RETURNING id`, [acme, atlas, t])).id);

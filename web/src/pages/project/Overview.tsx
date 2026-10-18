@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, BookOpen, FileText, Link2, ListChecks, MessageSquare, Paperclip, Pin, Plus } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BookOpen, FileText, Link2, ListChecks, MessageSquare, Paperclip, Pin, Plus, ShieldAlert } from 'lucide-react';
 import { api } from '../../api';
 import { KnowledgeRow, KnowledgeTile, RowSkeleton } from '../../components/Knowledge';
 import { Avatar, Empty, ErrorAlert } from '../../components/ui';
 import { AddKnowledgeMenu, KnowledgeFormModal } from './KnowledgeForm';
 import { useProject } from './ProjectLayout';
+import { PROJECT_ROLE_LABEL, timeAgo } from '../../lib/format';
 import { TileGridSkeleton } from '../../components/Skeletons';
-import type { ItemType } from '../../api';
+import type { ItemType, ProjectRole } from '../../api';
 
 export function ProjectOverview() {
   const p = useProject();
@@ -30,15 +31,16 @@ export function ProjectOverview() {
           </div>
         </div>
         {obPct !== null && (
-          <Link to={`/p/${p.id}/onboarding`} className="card card-pad" style={{ color: 'inherit', textDecoration: 'none' }}>
-            <div className="row"><ListChecks size={18} className="pin" /><strong>Your onboarding</strong><span className="spacer" /><ArrowRight size={15} /></div>
+          <div className="card card-pad">
+            <div className="row"><ListChecks size={18} className="pin" /><strong>Your onboarding</strong></div>
             <div className="progress success" style={{ margin: '12px 0 8px' }}><span style={{ width: `${obPct}%` }} /></div>
-            <span className="subtle">{obPct === 100 ? 'All required steps done' : `${ob.completed} of ${ob.required} required steps done`}</span>
-          </Link>
+            <span className="subtle">{obPct === 100 ? 'All done' : `${ob.completed} of ${ob.required} done`}</span>
+          </div>
         )}
       </div>
 
       <ErrorAlert error={q.error} />
+      {p.permissions['members.manage'] && <Attention projectId={p.id} />}
 
       {d && d.counts.total === 0 ? (
         <div className="card section">
@@ -82,7 +84,6 @@ export function ProjectOverview() {
           <section className="section">
             <div className="section-head">
               <h2>Recent updates</h2>
-              <Link to={`/p/${p.id}/knowledge`} style={{ fontSize: 14 }}>All knowledge ({d?.counts.total ?? '…'})</Link>
             </div>
             <div className="card">{q.isLoading ? <RowSkeleton /> : <div className="k-list">{d.recent.map((i: any) => <KnowledgeRow key={i.id} item={i} />)}</div>}</div>
           </section>
@@ -90,5 +91,34 @@ export function ProjectOverview() {
       )}
       <KnowledgeFormModal project={p} type={creating} onClose={() => setCreating(null)} />
     </div>
+  );
+}
+
+/** Only for Project Admins, and only rendered when there's something to act on. */
+function Attention({ projectId }: { projectId: string }) {
+  const q = useQuery({ queryKey: ['attention', projectId], queryFn: () => api(`/projects/${projectId}/attention`) });
+  const invites = q.data?.expiringInvitations ?? [];
+  const files = q.data?.blockedFiles ?? [];
+  if (!invites.length && !files.length) return null;
+  return (
+    <section className="card attention" aria-labelledby="attention-title">
+      <div className="card-head"><h3 id="attention-title"><AlertTriangle size={16} /> Needs attention</h3></div>
+      <ul>
+        {invites.map((i: any) => (
+          <li key={i.id}>
+            <Link2 size={15} />
+            <span>Invitation for <strong>{i.email ?? PROJECT_ROLE_LABEL[i.role as ProjectRole]}</strong> expires {timeAgo(i.expiresAt)}</span>
+            <Link to={`/p/${projectId}/members`} className="btn sm">Review</Link>
+          </li>
+        ))}
+        {files.map((f: any) => (
+          <li key={f.id}>
+            <ShieldAlert size={15} />
+            <span><strong>{f.filename}</strong> {f.scanStatus === 'quarantined' ? 'was blocked by the security scan' : 'couldn’t be scanned'}</span>
+            {f.item && <Link to={`/p/${projectId}/k/${f.item.id}`} className="btn sm">Open</Link>}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

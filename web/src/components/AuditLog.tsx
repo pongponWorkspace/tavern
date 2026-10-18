@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { ScrollText } from 'lucide-react';
+import { Download, ScrollText } from 'lucide-react';
 import { api } from '../api';
 import { actionLabel, fullDate, timeAgo } from '../lib/format';
 import { Avatar, Empty, ErrorAlert } from './ui';
@@ -31,6 +31,8 @@ export function AuditLog({ endpoint, groups = GROUPS }: { endpoint: string; grou
     getNextPageParam: (last: any) => last.page.nextCursor ?? undefined,
   });
   const rows = q.data?.pages.flatMap((p: any) => p.data) ?? [];
+  const exportQuery = new URLSearchParams(Object.entries({ action, outcome, from: from ? new Date(from).toISOString() : '' }).filter(([, v]) => v) as [string, string][]);
+  const exportHref = `/api/v1${endpoint}/export${exportQuery.size ? `?${exportQuery}` : ''}`;
   return (
     <div>
       <div className="toolbar">
@@ -44,6 +46,8 @@ export function AuditLog({ endpoint, groups = GROUPS }: { endpoint: string; grou
           <option value="failure">Failed</option>
         </select>
         <label className="row subtle" style={{ gap: 6 }}>Since <input className="input" type="date" style={{ width: 'auto' }} value={from} onChange={(e) => setFrom(e.target.value)} /></label>
+        <span className="spacer" />
+        <a className="btn" href={exportHref} download><Download size={15} /> Export CSV</a>
       </div>
       <ErrorAlert error={q.error} />
       {q.isLoading ? <TableSkeleton rows={8} cols={4} /> : <div className="card table-wrap">

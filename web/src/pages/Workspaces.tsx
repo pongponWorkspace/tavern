@@ -72,11 +72,10 @@ export function CreateProject({ workspaceId, open, onClose }: { workspaceId: str
   return (
     <Modal open={open} onClose={onClose} title="New project">
       <form className="form" onSubmit={submit}>
-        <p className="muted" style={{ marginTop: -6 }}>You'll be added as the project's first Project Admin.</p>
         <ErrorAlert error={error} />
         <Field label="Project name" htmlFor="pn"><input id="pn" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus /></Field>
         <Field label="Description" htmlFor="pd" hint="Optional"><textarea id="pd" className="textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
-        <Field label="Contact" htmlFor="pc" hint="Optional — e.g. a Slack channel or email"><input id="pc" className="input" value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} /></Field>
+        <Field label="Contact" htmlFor="pc" hint="Optional"><input id="pc" className="input" value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} /></Field>
         <div className="row"><span className="spacer" /><button type="button" className="btn" onClick={onClose}>Cancel</button><button className="btn primary" disabled={busy || form.name.trim().length < 2}>{busy ? <Spinner /> : 'Create project'}</button></div>
       </form>
     </Modal>
@@ -106,12 +105,12 @@ export function Workspaces() {
   return (
     <div className="content">
       <div className="page-head">
-        <div><h1>Workspaces</h1><p className="lede">Workspaces group the projects in {tenant.name}.</p></div>
+        <div><h1>Workspaces</h1></div>
         {perms.createWorkspace && <button className="btn primary" onClick={() => setCreating(true)}><Plus size={16} /> New workspace</button>}
       </div>
       <ErrorAlert error={q.error} />
       {q.data?.data.length === 0 ? (
-        <div className="card"><Empty icon={<Building2 size={22} />} title="No workspaces yet" action={perms.createWorkspace ? <button className="btn primary" onClick={() => setCreating(true)}>Create a workspace</button> : undefined}>Workspaces hold projects — one per product, department or client.</Empty></div>
+        <div className="card"><Empty icon={<Building2 size={22} />} title="No workspaces yet" /></div>
       ) : (
         <div className="grid-3">
           {q.data?.data.map((w: any) => (
@@ -163,9 +162,7 @@ export function WorkspaceDetail() {
       {archived && <div style={{ marginBottom: 16 }}><div className="alert warn">This workspace is archived. Its projects are read-only until it is restored.</div></div>}
       <div className="card">
         {q.data.data.length === 0 ? (
-          <Empty icon={<FolderKanban size={22} />} title="No projects here yet" action={perms.createProject && !archived ? <button className="btn primary" onClick={() => setCreating(true)}>Create a project</button> : undefined}>
-            {perms.createProject ? 'Create a project to give its links, files and documents one home.' : "You aren't a member of any project in this workspace yet."}
-          </Empty>
+          <Empty icon={<FolderKanban size={22} />} title="No projects here yet" />
         ) : (
           <div className="table-wrap">
             <table className="table">
@@ -188,9 +185,6 @@ export function WorkspaceDetail() {
           </div>
         )}
       </div>
-      {perms.listAllProjects && q.data.data.some((p: any) => !p.myRole) && (
-        <p className="subtle" style={{ marginTop: 12 }}><Lock size={12} style={{ verticalAlign: -1 }} /> As an organization admin you can see every project's name, but you need to be added to a project to open its content.</p>
-      )}
       <CreateProject workspaceId={workspaceId} open={creating} onClose={() => setCreating(false)} />
     </div>
   );

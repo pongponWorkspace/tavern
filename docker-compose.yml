@@ -14,5 +14,14 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+  # Optional local S3 server (same API as Cloudflare R2) for testing STORAGE_DRIVER=s3:
+  #   docker compose --profile s3 up -d s3
+  s3:
+    image: adobe/s3mock:5.2.3
+    profiles: ["s3"]
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: tavern-files
+    ports:
+      - "9100:9090"
 volumes:
   tavern-db:

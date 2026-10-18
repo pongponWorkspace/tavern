@@ -1,7 +1,9 @@
-import { Link, NavLink, Outlet, useOutletContext, useParams } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
-import { Archive, BookOpen, LayoutDashboard, ListChecks, ScrollText, Settings, ShieldCheck, Users } from 'lucide-react';
-import { api, type Project } from '../../api';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, Outlet, useNavigate, useOutletContext, useParams } from 'react-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Archive, BookOpen, Eye, LayoutDashboard, ListChecks, ScrollText, Settings, ShieldCheck, Users } from 'lucide-react';
+import { api, setPreviewRole, type Project, type ProjectRole } from '../../api';
+import { PROJECT_ROLE_LABEL } from '../../lib/format';
 import { RoleBadge } from '../../components/ui';
 import { ProjectSkeleton } from '../../components/Skeletons';
 import { NotFound } from '../NotFound';
@@ -12,9 +14,33 @@ export function useProjectQuery(projectId: string) {
   return useQuery({ queryKey: ['project', projectId], queryFn: () => api<Project>(`/projects/${projectId}`) });
 }
 
+/** Queries that depend on the project role. Session and organization data stay cached. */
+const projectScoped = (q: { queryKey: readonly unknown[] }) => !['me', 'providers', 'tenant', 'dashboard', 'workspaces', 'storage'].includes(q.queryKey[0] as string);
+
 export function ProjectLayout() {
   const { projectId = '' } = useParams();
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [viewAs, setViewAs] = useState<Exclude<ProjectRole, 'project_admin'> | null>(null);
   const q = useProjectQuery(projectId);
+
+  // Preview applies to this project only: switching project or leaving turns it off.
+  const previewing = useRef(false);
+  const changeViewAs = (role: typeof viewAs) => {
+    setPreviewRole(role);
+    previewing.current = Boolean(role);
+    setViewAs(role);
+    navigate(`/p/${projectId}`);
+    qc.resetQueries({ predicate: projectScoped }); // project data was loaded as the previous role
+  };
+  useEffect(() => () => {
+    if (!previewing.current) return;
+    setPreviewRole(null);
+    previewing.current = false;
+    qc.resetQueries({ predicate: projectScoped });
+  }, [projectId, qc]);
+  useEffect(() => setViewAs(null), [projectId]);
+
   if (q.isLoading) return <ProjectSkeleton />;
   if (q.error || !q.data) return <NotFound what="project" />;
   const p = q.data;
@@ -22,6 +48,11 @@ export function ProjectLayout() {
   const base = `/p/${p.id}`;
   return (
     <div className="content">
+      {viewAs && (
+        <div className="preview-bar" role="status">
+          <Eye size={16} /> Viewing as <strong>{PROJECT_ROLE_LABEL[viewAs]}</strong>. Changes are off.
+        </div>
+      )}
       <div className="page-head" style={{ marginBottom: 16 }}>
         <div style={{ minWidth: 0 }}>
           <div className="crumbs">
@@ -34,6 +65,17 @@ export function ProjectLayout() {
             {p.status === 'archived' && <span className="badge warn"><Archive size={12} /> Archived</span>}
           </div>
         </div>
+        {p.actualRole === 'project_admin' && (
+          <label className="row view-as">
+            <span className="subtle">View as</span>
+            <select className="select" aria-label="View project as" value={viewAs ?? ''} onChange={(e) => changeViewAs((e.target.value || null) as typeof viewAs)}>
+              <option value="">Project Admin</option>
+              <option value="maintainer">Maintainer</option>
+              <option value="member">Member</option>
+              <option value="viewer">Viewer</option>
+            </select>
+          </label>
+        )}
       </div>
       {!p.writable && (
         <div style={{ marginBottom: 16 }}>

@@ -172,7 +172,7 @@ function VerifyBanner() {
     <div style={{ padding: '12px 24px 0' }}>
       <div className="alert warn" role="status">
         <span>
-          <strong>Verify your email.</strong> Some invitations require a verified address.{' '}
+          <strong>Verify your email address.</strong>{' '}
           {sent ? (
             'A new link is on its way.'
           ) : (

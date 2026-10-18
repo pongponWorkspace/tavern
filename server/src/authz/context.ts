@@ -4,7 +4,8 @@
 
 import type { FastifyRequest } from 'fastify';
 import { one, type Db } from '../db/pool.js';
-import { forbidden, notFound, readOnly, unauthenticated } from '../lib/errors.js';
+import { AppError, forbidden, notFound, readOnly, unauthenticated } from '../lib/errors.js';
+import { currentRequest } from '../lib/request-context.js';
 import {
   projectCan,
   tenantCan,
@@ -70,6 +71,9 @@ export interface ProjectAccess {
   permissions: ProjectPermissions;
   /** false when the project, its workspace or tenant is archived/suspended. */
   writable: boolean;
+  /** The caller's real role; differs from `role` while a Project Admin previews another role. */
+  actualRole: ProjectRole;
+  previewing: boolean;
   status: 'active' | 'archived';
 }
 
@@ -94,12 +98,20 @@ export async function loadProjectAccess(db: Db, userId: string, projectId: strin
     [userId, projectId],
   );
   if (!row) throw notFound('project');
+  // "View as": only a Project Admin may preview, and only for reads.
+  const ctx = currentRequest();
+  const previewing = Boolean(ctx?.previewRole) && row.role === 'project_admin';
+  if (previewing && !['GET', 'HEAD'].includes(ctx!.method)) {
+    throw new AppError(409, 'READ_ONLY', 'You are viewing this project as another role. Exit the preview to make changes.');
+  }
   return {
     tenantId: row.tenant_id,
     projectId: row.id,
     workspaceId: row.workspace_id,
     projectName: row.name,
-    role: row.role,
+    role: previewing ? ctx!.previewRole! : row.role,
+    actualRole: row.role,
+    previewing,
     tenantRole: row.tenant_role,
     status: row.status,
     writable: row.status === 'active' && row.workspace_status === 'active',

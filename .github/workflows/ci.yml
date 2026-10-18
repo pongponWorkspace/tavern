@@ -27,6 +27,12 @@ jobs:
           --health-interval 2s
           --health-timeout 3s
           --health-retries 30
+      s3:
+        image: adobe/s3mock:5.2.3
+        env:
+          COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: tavern-files
+        ports:
+          - 9100:9090
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,7 +42,9 @@ jobs:
       - run: npm ci
       - name: Typecheck
         run: npm run typecheck
-      - name: API tests (authorization, tenant isolation, acceptance criteria)
+      - name: API tests (authorization, tenant isolation, acceptance criteria, S3 driver)
         run: npm test
+        env:
+          S3_TEST_ENDPOINT: http://localhost:9100
       - name: Build
         run: npm run build
