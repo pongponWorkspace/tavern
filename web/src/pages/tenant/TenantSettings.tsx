@@ -1,0 +1,242 @@
+import { useState, type FormEvent } from 'react';
+import { NavLink, Navigate, useParams } from 'react-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Ban, Link2, Lock } from 'lucide-react';
+import { api, type TenantRole } from '../../api';
+import { fullDate, TENANT_ROLE_LABEL, timeAgo } from '../../lib/format';
+import { useMe } from '../../lib/session';
+import { AuditLog } from '../../components/AuditLog';
+import { Avatar, ConfirmDialog, TenantRoleBadge, Empty, ErrorAlert, Field, Spinner, errorText, useToast } from '../../components/ui';
+import { PageHeadSkeleton, TableSkeleton, TabsSkeleton } from '../../components/Skeletons';
+import { InviteModal, InviteStatus } from '../project/Members';
+import { TenantRoleTable } from '../../components/RoleTables';
+import { NotFound } from '../NotFound';
+
+export function TenantSettings() {
+  const { tenantId = '', tab } = useParams();
+  const me = useMe();
+  const tenant = me.data?.tenants.find((t) => t.id === tenantId);
+  const q = useQuery({ queryKey: ['tenant', tenantId], queryFn: () => api(`/tenants/${tenantId}`), enabled: Boolean(tenant) });
+  if (!tenant) return <NotFound what="organization" />;
+  if (q.isLoading) return <div className="content"><PageHeadSkeleton /><TabsSkeleton n={4} /><TableSkeleton rows={5} cols={5} /></div>;
+  if (q.error || !q.data) return <div className="content"><ErrorAlert error={q.error} /></div>;
+  const perms = q.data.permissions;
+  // Every organization page lives here as a tab; each shows only to people allowed to use it.
+  const tabs = [
+    { key: 'general', label: 'General', show: perms.manageSettings },
+    { key: 'members', label: 'Members', show: perms.manageMembers },
+    { key: 'invitations', label: 'Invitations', show: perms.manageMembers },
+    { key: 'roles', label: 'Roles & permissions', show: true },
+    { key: 'audit', label: 'Audit log', show: perms.viewAudit },
+  ].filter((t) => t.show);
+  if (!tab || !tabs.some((t) => t.key === tab)) return <Navigate to={`/t/${tenantId}/settings/${tabs[0].key}`} replace />;
+  const base = `/t/${tenantId}/settings`;
+  return (
+    <div className="content">
+      <div className="page-head">
+        <div>
+          <h1>{tenant.name}</h1>
+          <p className="lede">
+            Organization settings. You are the organization’s <strong>{TENANT_ROLE_LABEL[tenant.role]}</strong>. Project content stays private to each project’s members.
+          </p>
+        </div>
+      </div>
+      <nav className="tabs" aria-label="Organization settings">
+        {tabs.map((t) => <NavLink key={t.key} to={`${base}/${t.key}`}>{t.label}</NavLink>)}
+      </nav>
+      {tab === 'roles' && (
+        <>
+          <p className="subtle" style={{ marginBottom: 14, maxWidth: 760 }}>
+            What each organization role can do. {perms.manageRoles ? 'Changes apply to everyone with that role on their next action.' : 'Only the Owner can change this table.'} Project content is controlled separately, in each project’s <em>Roles &amp; permissions</em> tab.
+          </p>
+          <TenantRoleTable tenantId={tenantId} value={q.data.rolePermissions} editable={perms.manageRoles} myRole={tenant.role} />
+        </>
+      )}
+      {tab === 'general' && <General tenant={q.data} />}
+      {tab === 'members' && <TenantMembers tenant={q.data} />}
+      {tab === 'invitations' && <TenantInvites tenant={q.data} />}
+      {tab === 'audit' && (
+        <>
+          <p className="subtle" style={{ marginBottom: 14 }}>Organization-level events: members, roles, workspaces and settings. Project activity is visible to each project's admins.</p>
+          <AuditLog endpoint={`/tenants/${tenantId}/audit-logs`} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function General({ tenant }: { tenant: any }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [name, setName] = useState(tenant.name);
+  const [allow, setAllow] = useState(tenant.settings.projectInvitesAddTenantMembers);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/tenants/${tenant.id}`, { method: 'PATCH', body: { name, projectInvitesAddTenantMembers: allow } });
+      await qc.invalidateQueries();
+      toast('Organization updated');
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="stack" style={{ gap: 24, maxWidth: 720 }}>
+      <form className="card card-pad form" onSubmit={submit}>
+        <ErrorAlert error={error} />
+        <Field label="Organization name" htmlFor="on"><input id="on" className="input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
+        <label className="check">
+          <input type="checkbox" checked={allow} onChange={(e) => setAllow(e.target.checked)} />
+          <span><strong>Project invitations can bring in new people</strong><br /><span className="subtle">When on, accepting a project invitation also adds the person to this organization as a Member. When off, only existing organization members can join projects.</span></span>
+        </label>
+        <div className="row"><span className="spacer" /><button className="btn primary" disabled={busy || name.trim().length < 2}>{busy ? <Spinner /> : 'Save'}</button></div>
+      </form>
+      {tenant.permissions.transferOwnership && <TransferOwnership tenant={tenant} />}
+    </div>
+  );
+}
+
+function TransferOwnership({ tenant }: { tenant: any }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const members = useQuery({ queryKey: ['tenant-members', tenant.id], queryFn: () => api(`/tenants/${tenant.id}/members`) });
+  const [target, setTarget] = useState('');
+  const [confirm, setConfirm] = useState(false);
+  const candidates = (members.data?.data ?? []).filter((m: any) => m.role !== 'owner' && m.status === 'active');
+  const name = candidates.find((m: any) => m.userId === target)?.displayName;
+  return (
+    <div className="card card-pad form">
+      <div><h2>Transfer ownership</h2><p className="muted" style={{ marginTop: 4 }}>The new owner gets full control. You'll become an Admin.</p></div>
+      <div className="row">
+        <select className="select" value={target} onChange={(e) => setTarget(e.target.value)} aria-label="New owner">
+          <option value="">Choose a member…</option>
+          {candidates.map((m: any) => <option key={m.userId} value={m.userId}>{m.displayName} ({m.email})</option>)}
+        </select>
+        <button className="btn danger" disabled={!target} onClick={() => setConfirm(true)}>Transfer</button>
+      </div>
+      <ConfirmDialog open={confirm} title={`Make ${name} the owner?`} confirmLabel="Transfer ownership" danger onClose={() => setConfirm(false)}
+        onConfirm={async () => {
+          try {
+            await api(`/tenants/${tenant.id}/transfer-ownership`, { body: { userId: target } });
+            await qc.invalidateQueries();
+            toast('Ownership transferred');
+          } catch (e) {
+            toast(errorText(e), 'error');
+          }
+          setConfirm(false);
+        }}>
+        Only the owner can transfer ownership or delete the organization. This takes effect immediately.
+      </ConfirmDialog>
+    </div>
+  );
+}
+
+function TenantMembers({ tenant }: { tenant: any }) {
+  const me = useMe();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [removing, setRemoving] = useState<any | null>(null);
+  const q = useQuery({ queryKey: ['tenant-members', tenant.id], queryFn: () => api(`/tenants/${tenant.id}/members`) });
+  const run = async (fn: () => Promise<unknown>, msg: string) => {
+    try {
+      await fn();
+      await qc.invalidateQueries({ queryKey: ['tenant-members', tenant.id] });
+      toast(msg);
+    } catch (e) {
+      toast(errorText(e), 'error');
+    }
+  };
+  if (q.isLoading) return <TableSkeleton rows={5} cols={6} />;
+  const isOwner = tenant.myRole === 'owner';
+  const canEdit = (m: any) => m.userId !== me.data?.user.id && m.role !== 'owner' && (isOwner || m.role === 'member');
+  return (
+    <>
+      <ErrorAlert error={q.error} />
+      <div className="card table-wrap">
+        <table className="table">
+          <thead><tr><th>Person</th><th>Role</th><th>Projects</th><th>Status</th><th>Joined</th><th aria-label="Actions" /></tr></thead>
+          <tbody>
+            {q.data.data.map((m: any) => (
+              <tr key={m.userId}>
+                <td><div className="person"><Avatar id={m.userId} name={m.displayName} url={m.avatarUrl} /><div><div className="person-name">{m.displayName}</div><div className="person-email">{m.email}</div></div></div></td>
+                <td>
+                  {canEdit(m) && isOwner ? (
+                    <select className="select" value={m.role} aria-label={`Role for ${m.displayName}`}
+                      onChange={(e) => run(() => api(`/tenants/${tenant.id}/members/${m.userId}`, { method: 'PATCH', body: { role: e.target.value } }), 'Role updated')}>
+                      <option value="admin">Admin</option>
+                      <option value="member">Member</option>
+                    </select>
+                  ) : <TenantRoleBadge role={m.role as TenantRole} />}
+                </td>
+                <td className="muted">{m.projectCount}</td>
+                <td>{m.status === 'active' ? <span className="badge ok">Active</span> : <span className="badge warn">Suspended</span>}</td>
+                <td className="muted" title={fullDate(m.joinedAt)}>{timeAgo(m.joinedAt)}</td>
+                <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  {canEdit(m) && (
+                    <>
+                      <button className="btn ghost sm" onClick={() => run(() => api(`/tenants/${tenant.id}/members/${m.userId}`, { method: 'PATCH', body: { status: m.status === 'active' ? 'suspended' : 'active' } }), m.status === 'active' ? 'Suspended' : 'Reactivated')}>
+                        {m.status === 'active' ? 'Suspend' : 'Reactivate'}
+                      </button>
+                      <button className="btn ghost sm" onClick={() => setRemoving(m)}>Remove</button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="subtle" style={{ marginTop: 12 }}>Suspending blocks access to the organization and all of its projects until reactivated. Removing also removes the person from every project.</p>
+      <ConfirmDialog open={Boolean(removing)} title={`Remove ${removing?.displayName}?`} confirmLabel="Remove from organization" danger onClose={() => setRemoving(null)}
+        onConfirm={() => { const m = removing; setRemoving(null); run(() => api(`/tenants/${tenant.id}/members/${m.userId}`, { method: 'DELETE' }), `${m.displayName} removed`); }}>
+        They'll lose access to {tenant.name} and every project in it, immediately.
+      </ConfirmDialog>
+    </>
+  );
+}
+
+function TenantInvites({ tenant }: { tenant: any }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [inviting, setInviting] = useState(false);
+  const q = useQuery({ queryKey: ['tenant-invites', tenant.id], queryFn: () => api(`/tenants/${tenant.id}/invitations`) });
+  const refresh = () => qc.invalidateQueries({ queryKey: ['tenant-invites', tenant.id] });
+  const roles = [
+    { value: 'member', label: 'Member', hint: 'Joins the organization; needs to be added to projects separately.' },
+    ...(tenant.myRole === 'owner' ? [{ value: 'admin', label: 'Admin', hint: 'Manages members, workspaces and projects — but not project content.' }] : []),
+  ];
+  return (
+    <>
+      <div className="section-head">
+        <p className="subtle">Organization invitations add people to {tenant.name}. To give someone access to a project, invite them from that project's Members tab.</p>
+        <button className="btn primary" onClick={() => setInviting(true)}><Link2 size={15} /> Invite to organization</button>
+      </div>
+      <div className="card table-wrap">
+        {q.data?.data.length === 0 ? <Empty icon={<Link2 size={22} />} title="No organization invitations" /> : (
+          <table className="table">
+            <thead><tr><th>Role</th><th>Restriction</th><th>Uses</th><th>Status</th><th>Expires</th><th aria-label="Actions" /></tr></thead>
+            <tbody>
+              {q.data?.data.map((i: any) => (
+                <tr key={i.id}>
+                  <td><strong>{TENANT_ROLE_LABEL[i.role as TenantRole]}</strong></td>
+                  <td className="muted">{i.email ?? (i.allowedDomain ? `@${i.allowedDomain}` : 'Anyone with the link')}</td>
+                  <td className="muted">{i.useCount}/{i.maxUses}</td>
+                  <td><InviteStatus status={i.status} /></td>
+                  <td className="muted">{timeAgo(i.expiresAt)}</td>
+                  <td style={{ textAlign: 'right' }}>{i.status === 'active' && <button className="btn ghost sm" onClick={async () => { try { await api(`/invitations/${i.id}/revoke`, { method: 'POST' }); refresh(); toast('Invitation revoked'); } catch (e) { toast(errorText(e), 'error'); } }}><Ban size={14} /> Revoke</button>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <InviteModal open={inviting} onClose={() => setInviting(false)} endpoint={`/tenants/${tenant.id}/invitations`} scopeName={tenant.name} roles={roles} defaultRole="member" onCreated={refresh} />
+    </>
+  );
+}

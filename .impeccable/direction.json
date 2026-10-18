@@ -1,0 +1,69 @@
+{
+  "title": "Choose Tavern's visual world",
+  "question": "The roll assigned The Key Board. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "The Key Board",
+      "kicker": "THE ROLL",
+      "lineage": "Inn reception key cabinets: numbered hooks, colored fob tags",
+      "thesis": "Access is a key on a hook: issued, coded by color, numbered, returned on revoke.",
+      "palette": [
+        "#eef0f2",
+        "#15181d",
+        "#2b59ff",
+        "#e8432e",
+        "#f2b500",
+        "#1f9d6b"
+      ],
+      "materials": [
+        "powder-coated steel panel",
+        "molded plastic key fobs",
+        "stamped numerals"
+      ],
+      "viewport": "A cool steel-gray workspace; every item carries a stamped reference number and a fob-shaped type tag; roles read as fob colors.",
+      "risk": "Fob colors can turn into confetti unless each hue is locked to one meaning (role or item type)."
+    },
+    {
+      "id": "challenger-wayfinding",
+      "label": "Terminal Wayfinding",
+      "lineage": "Airport sign systems: yellow bands, black humanist sans, arrows",
+      "thesis": "Onboarding as wayfinding: yellow is reserved for 'where to go next' and nothing else.",
+      "case": "Strong product clarity for onboarding and navigation; yellow bands must be rationed or the dense hub becomes loud.",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-terminal-yellow-wayfinding-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-terminal-yellow-wayfinding.webp"
+    },
+    {
+      "id": "challenger-highdensity",
+      "label": "Dense Module Grid",
+      "lineage": "Japanese high-density web: hairline modules, small red header tabs",
+      "thesis": "Every project's sources of truth on one packed, ruled screen; nothing wastes a pixel.",
+      "case": "Fits power users scanning many links; risks crowding new members who need a calm first path.",
+      "hero": "https://impeccable.style/worlds/cards/japanese-high-density-web-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/japanese-high-density-web.webp"
+    },
+    {
+      "id": "challenger-manual",
+      "label": "Tabbed Manual",
+      "lineage": "Boxed-software manuals: colored divider tabs, acetate leaves",
+      "thesis": "A project is a binder; categories are stepped colored tabs down the edge.",
+      "case": "Tabs map well to categories; the acetate layering is heavy for a daily operational tool.",
+      "hero": "https://impeccable.style/worlds/cards/rw-manual-acetate-tab-board-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/rw-manual-acetate-tab-board.webp"
+    }
+  ],
+  "reroll": true,
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "Modern B2B SaaS done straight: neutral grays, one blue accent, sidebar and tables at full craft.",
+    "viewport": "Sidebar navigation, project header, filterable knowledge list.",
+    "palette": [
+      "#ffffff",
+      "#f4f5f7",
+      "#111827",
+      "#2563eb"
+    ]
+  },
+  "steer": true
+}

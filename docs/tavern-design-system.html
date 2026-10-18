@@ -1,0 +1,2331 @@
+<title>Tavern Design System</title>
+<!--
+THESIS: Tavern ships the category standard for B2B SaaS, played straight: a governed index of project sources, at GitHub/Atlassian craft. It refuses the cream-serif and neon-on-black looks.
+OWN-WORLD: Cool blue-gray neutrals, one electric cobalt accent for action and selection, semantic green/amber/red for state, three fixed hues for item types (link blue, file orange, doc violet). Public Sans for UI, JetBrains Mono only for URLs, tokens and code. 6px radius, 1px borders, shadows only on overlays.
+STORY: A designer or developer sees every token and every common component in real Tavern situations, then copies the tokens into the app.
+FIRST VIEWPORT: Brand lockup and theme switch at the top, section index on the left, brand and color foundations first.
+FORM: Canon (category standard), chosen by the user after two rounds. Seed keys 6f8afc95 and 4c65105c.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style id="tokens">
+/* Layout: documentation page. A sticky section index on the left, specimen frames on a 4px grid on the right. */
+:root {
+  /* ── Typography ── */
+  --font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --text-xs: 12px;   --leading-xs: 16px;
+  --text-sm: 13px;   --leading-sm: 20px;
+  --text-md: 14px;   --leading-md: 20px;
+  --text-lg: 16px;   --leading-lg: 24px;
+  --text-xl: 20px;   --leading-xl: 28px;
+  --text-2xl: 24px;  --leading-2xl: 32px;
+  --text-3xl: 32px;  --leading-3xl: 40px;
+  --weight-regular: 400; --weight-medium: 500; --weight-semibold: 600; --weight-bold: 700;
+
+  /* ── Spacing (4px base) ── */
+  --space-0: 0; --space-1: 2px; --space-2: 4px; --space-3: 8px; --space-4: 12px; --space-5: 16px;
+  --space-6: 20px; --space-7: 24px; --space-8: 32px; --space-9: 40px; --space-10: 48px; --space-11: 64px;
+
+  /* ── Shape & size ── */
+  --radius-sm: 4px; --radius-md: 6px; --radius-lg: 8px; --radius-xl: 12px; --radius-full: 999px;
+  --control-sm: 28px; --control-md: 32px; --control-lg: 40px;
+  --sidebar-width: 248px; --content-max: 1200px;
+
+  /* ── Motion ── */
+  --duration-fast: 100ms; --duration-base: 160ms; --duration-slow: 240ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ── Z-index ── */
+  --z-sticky: 20; --z-menu: 40; --z-dialog: 60; --z-toast: 80;
+
+  /* ── Primitive scales (theme-invariant, reference only) ── */
+  --gray-0: #ffffff; --gray-50: #f6f7f9; --gray-100: #eef0f3; --gray-200: #dfe3e8; --gray-300: #c9ced6;
+  --gray-400: #a3aab5; --gray-500: #8c94a0; --gray-600: #687080; --gray-700: #555d69; --gray-800: #2c323b;
+  --gray-900: #1b1f26; --gray-950: #0d1015;
+  --blue-50: #eef1ff; --blue-100: #dde3ff; --blue-200: #bcc8ff; --blue-300: #92a5ff; --blue-400: #6680ff;
+  --blue-500: #4565ff; --blue-600: #2447f5; --blue-700: #1f3fe0; --blue-800: #1b37cf; --blue-900: #161d3d;
+  --green-50: #eaf6ef; --green-200: #b5dfc6; --green-600: #1a7f4b; --green-700: #1a7a48;
+  --amber-50: #fff6dd; --amber-200: #f0d48a; --amber-500: #c98a00; --amber-700: #8a5a00;
+  --red-50: #fdeeed; --red-200: #f3bdb9; --red-600: #c9302c; --red-700: #b42620;
+  --orange-50: #fff1e6; --orange-200: #f5c9a8; --orange-700: #b04a0d;
+  --violet-50: #f3effd; --violet-200: #d5c8f5; --violet-600: #6b46c9;
+  --teal-50: #e6f5f4; --teal-200: #a9dcd8; --teal-700: #0e7470;
+
+  /* ── Semantic: light ── */
+  --color-canvas: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f9fafb;
+  --color-surface-sunken: #eef0f3;
+  --color-surface-hover: #f1f3f6;
+  --color-surface-selected: #eef1ff;
+  --color-surface-inverse: #1b1f26;
+  --color-border: #dfe3e8;
+  --color-border-muted: #eaedf1;
+  --color-border-strong: #c9ced6;
+  --color-border-input: #8c94a0;
+  --color-fg: #1b1f26;
+  --color-fg-muted: #555d69;
+  --color-fg-subtle: #687080;
+  --color-fg-disabled: #a3aab5;
+  --color-fg-on-emphasis: #ffffff;
+  --color-fg-inverse: #f6f7f9;
+  --color-accent-fg: #1f3fe0;
+  --color-accent-emphasis: #2447f5;
+  --color-accent-emphasis-hover: #1b37cf;
+  --color-accent-subtle: #eef1ff;
+  --color-accent-muted: #bcc8ff;
+  --color-success-fg: #1a7a48;
+  --color-success-emphasis: #1a7f4b;
+  --color-success-subtle: #eaf6ef;
+  --color-success-muted: #b5dfc6;
+  --color-attention-fg: #8a5a00;
+  --color-attention-emphasis: #c98a00;
+  --color-attention-subtle: #fff6dd;
+  --color-attention-muted: #f0d48a;
+  --color-danger-fg: #b42620;
+  --color-danger-emphasis: #c9302c;
+  --color-danger-emphasis-hover: #ad2622;
+  --color-danger-subtle: #fdeeed;
+  --color-danger-muted: #f3bdb9;
+  --color-done-fg: #6b46c9;
+  --color-done-subtle: #f3effd;
+  --color-done-muted: #d5c8f5;
+  --color-teal-fg: #0e7470;
+  --color-teal-subtle: #e6f5f4;
+  --color-teal-muted: #a9dcd8;
+  --color-type-link-fg: #1f3fe0;
+  --color-type-link-bg: #eef1ff;
+  --color-type-file-fg: #b04a0d;
+  --color-type-file-bg: #fff1e6;
+  --color-type-doc-fg: #6b46c9;
+  --color-type-doc-bg: #f3effd;
+  --color-avatar-1: #2447f5; --color-avatar-2: #1a7f4b; --color-avatar-3: #b04a0d;
+  --color-avatar-4: #6b46c9; --color-avatar-5: #0e7470; --color-avatar-6: #b42620;
+  --color-focus: #2447f5;
+  --color-backdrop: rgb(13 16 21 / 0.45);
+  --color-skeleton: #e6e9ee;
+  --shadow-sm: 0 1px 2px rgb(13 16 21 / 0.06);
+  --shadow-md: 0 1px 3px rgb(13 16 21 / 0.08), 0 8px 24px rgb(13 16 21 / 0.12);
+  --shadow-lg: 0 4px 12px rgb(13 16 21 / 0.10), 0 24px 48px rgb(13 16 21 / 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-canvas: #0d1015;
+    --color-surface: #151a21;
+    --color-surface-subtle: #1a1f27;
+    --color-surface-sunken: #0a0d11;
+    --color-surface-hover: #1f252e;
+    --color-surface-selected: #161d3d;
+    --color-surface-inverse: #e6e9ee;
+    --color-border: #2b323c;
+    --color-border-muted: #222831;
+    --color-border-strong: #3a424e;
+    --color-border-input: #66707e;
+    --color-fg: #e6e9ee;
+    --color-fg-muted: #aab2bf;
+    --color-fg-subtle: #858f9d;
+    --color-fg-disabled: #5b6472;
+    --color-fg-on-emphasis: #ffffff;
+    --color-fg-inverse: #151a21;
+    --color-accent-fg: #8fa2ff;
+    --color-accent-emphasis: #3a5bff;
+    --color-accent-emphasis-hover: #4565ff;
+    --color-accent-subtle: #161d3d;
+    --color-accent-muted: #2c3a80;
+    --color-success-fg: #5fc98e;
+    --color-success-emphasis: #1f7d4c;
+    --color-success-subtle: #12261b;
+    --color-success-muted: #1f4a32;
+    --color-attention-fg: #e3b341;
+    --color-attention-emphasis: #b57e00;
+    --color-attention-subtle: #2a2210;
+    --color-attention-muted: #57441a;
+    --color-danger-fg: #ff8a80;
+    --color-danger-emphasis: #d13b35;
+    --color-danger-emphasis-hover: #e04842;
+    --color-danger-subtle: #2d1615;
+    --color-danger-muted: #5c2523;
+    --color-done-fg: #b49cf5;
+    --color-done-subtle: #221a38;
+    --color-done-muted: #42346b;
+    --color-teal-fg: #5cc9c1;
+    --color-teal-subtle: #0f2726;
+    --color-teal-muted: #1f4e4b;
+    --color-type-link-fg: #8fa2ff;
+    --color-type-link-bg: #161d3d;
+    --color-type-file-fg: #f2a066;
+    --color-type-file-bg: #2b1a0e;
+    --color-type-doc-fg: #b49cf5;
+    --color-type-doc-bg: #221a38;
+    --color-focus: #6680ff;
+    --color-backdrop: rgb(0 0 0 / 0.6);
+    --color-skeleton: #222831;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 1px 3px rgb(0 0 0 / 0.5), 0 8px 24px rgb(0 0 0 / 0.45);
+    --shadow-lg: 0 4px 12px rgb(0 0 0 / 0.5), 0 24px 48px rgb(0 0 0 / 0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --color-canvas: #0d1015;
+  --color-surface: #151a21;
+  --color-surface-subtle: #1a1f27;
+  --color-surface-sunken: #0a0d11;
+  --color-surface-hover: #1f252e;
+  --color-surface-selected: #161d3d;
+  --color-surface-inverse: #e6e9ee;
+  --color-border: #2b323c;
+  --color-border-muted: #222831;
+  --color-border-strong: #3a424e;
+  --color-border-input: #66707e;
+  --color-fg: #e6e9ee;
+  --color-fg-muted: #aab2bf;
+  --color-fg-subtle: #858f9d;
+  --color-fg-disabled: #5b6472;
+  --color-fg-on-emphasis: #ffffff;
+  --color-fg-inverse: #151a21;
+  --color-accent-fg: #8fa2ff;
+  --color-accent-emphasis: #3a5bff;
+  --color-accent-emphasis-hover: #4565ff;
+  --color-accent-subtle: #161d3d;
+  --color-accent-muted: #2c3a80;
+  --color-success-fg: #5fc98e;
+  --color-success-emphasis: #1f7d4c;
+  --color-success-subtle: #12261b;
+  --color-success-muted: #1f4a32;
+  --color-attention-fg: #e3b341;
+  --color-attention-emphasis: #b57e00;
+  --color-attention-subtle: #2a2210;
+  --color-attention-muted: #57441a;
+  --color-danger-fg: #ff8a80;
+  --color-danger-emphasis: #d13b35;
+  --color-danger-emphasis-hover: #e04842;
+  --color-danger-subtle: #2d1615;
+  --color-danger-muted: #5c2523;
+  --color-done-fg: #b49cf5;
+  --color-done-subtle: #221a38;
+  --color-done-muted: #42346b;
+  --color-teal-fg: #5cc9c1;
+  --color-teal-subtle: #0f2726;
+  --color-teal-muted: #1f4e4b;
+  --color-type-link-fg: #8fa2ff;
+  --color-type-link-bg: #161d3d;
+  --color-type-file-fg: #f2a066;
+  --color-type-file-bg: #2b1a0e;
+  --color-type-doc-fg: #b49cf5;
+  --color-type-doc-bg: #221a38;
+  --color-focus: #6680ff;
+  --color-backdrop: rgb(0 0 0 / 0.6);
+  --color-skeleton: #222831;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 1px 3px rgb(0 0 0 / 0.5), 0 8px 24px rgb(0 0 0 / 0.45);
+  --shadow-lg: 0 4px 12px rgb(0 0 0 / 0.5), 0 24px 48px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+</style>
+
+<style>
+/* ───────── Base ───────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 72px; }
+body {
+  margin: 0; background: var(--color-canvas); color: var(--color-fg);
+  font: var(--weight-regular) var(--text-md)/var(--leading-md) var(--font-sans);
+  -webkit-font-smoothing: antialiased; font-feature-settings: 'tnum' 0;
+}
+h1, h2, h3, h4, p { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+a { color: var(--color-accent-fg); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 2px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+code, kbd, pre, .mono { font-family: var(--font-mono); }
+.lucide { width: 16px; height: 16px; stroke-width: 1.75; flex: none; vertical-align: middle; }
+.icon-sm .lucide, .lucide.sm { width: 14px; height: 14px; }
+.icon-lg .lucide, .lucide.lg { width: 20px; height: 20px; }
+.num { font-variant-numeric: tabular-nums; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ───────── Documentation chrome ───────── */
+.ds-top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: var(--z-sticky);
+  display: flex; align-items: center; gap: var(--space-5); padding: 0 var(--space-7); height: 56px;
+  background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+}
+.ds-top .lockup { display: flex; align-items: center; gap: var(--space-4); min-width: 0; }
+.ds-top .version { color: var(--color-fg-subtle); font-size: var(--text-sm); white-space: nowrap; }
+.ds-top .spacer { flex: 1; }
+.ds-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); max-width: 1320px; margin: 0 auto; }
+.ds-toc { position: sticky; top: 56px; align-self: start; height: calc(100vh - 56px); overflow-y: auto; padding: var(--space-7) var(--space-4) var(--space-7) var(--space-7); }
+.ds-toc nav { display: flex; flex-direction: column; gap: 1px; }
+.ds-toc .toc-group { font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--color-fg-subtle); padding: var(--space-5) var(--space-3) var(--space-2); }
+.ds-toc .toc-group:first-child { padding-top: 0; }
+.ds-toc a { display: block; padding: 5px var(--space-3); border-radius: var(--radius-md); color: var(--color-fg-muted); font-size: var(--text-sm); }
+.ds-toc a:hover { background: var(--color-surface-hover); color: var(--color-fg); text-decoration: none; }
+.ds-main { min-width: 0; padding: var(--space-8) var(--space-8) var(--space-11); display: flex; flex-direction: column; gap: 72px; }
+.ds-intro { display: flex; flex-direction: column; gap: var(--space-4); max-width: 720px; }
+.ds-intro h1 { font-size: var(--text-3xl); line-height: var(--leading-3xl); font-weight: var(--weight-bold); letter-spacing: -0.02em; }
+.ds-intro p { font-size: var(--text-lg); line-height: var(--leading-lg); color: var(--color-fg-muted); }
+.ds-meta { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); font-size: var(--text-sm); color: var(--color-fg-subtle); }
+.ds-section { display: flex; flex-direction: column; gap: var(--space-7); scroll-margin-top: 72px; }
+.ds-section > header { display: flex; flex-direction: column; gap: var(--space-3); padding-bottom: var(--space-5); border-bottom: 1px solid var(--color-border); }
+.ds-section > header h2 { font-size: var(--text-2xl); line-height: var(--leading-2xl); font-weight: var(--weight-bold); letter-spacing: -0.01em; }
+.ds-section > header p { color: var(--color-fg-muted); max-width: 70ch; }
+.ds-block { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.ds-block > h3 { font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-semibold); }
+.ds-block > .spec { font-size: var(--text-sm); color: var(--color-fg-subtle); margin-top: -8px; }
+.ds-frame { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-7); min-width: 0; }
+.ds-frame.canvas { background: var(--color-canvas); }
+.ds-frame.flush { padding: 0; overflow: hidden; }
+.ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
+.ds-row.top { align-items: flex-start; }
+.ds-stack { display: flex; flex-direction: column; gap: var(--space-5); }
+.ds-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+.ds-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
+.ds-caption { font-size: var(--text-xs); color: var(--color-fg-subtle); }
+.ds-note { font-size: var(--text-sm); color: var(--color-fg-muted); max-width: 70ch; }
+.ds-dodont { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+.ds-dodont > div { border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-5); background: var(--color-surface); display: flex; flex-direction: column; gap: var(--space-3); }
+.ds-dodont .verdict { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.ds-dodont .do .verdict { color: var(--color-success-fg); }
+.ds-dodont .dont .verdict { color: var(--color-danger-fg); }
+.ds-dodont q { quotes: none; font-size: var(--text-md); }
+
+@media (max-width: 1000px) {
+  .ds-layout { grid-template-columns: minmax(0, 1fr); }
+  .ds-toc { position: static; height: auto; padding: var(--space-4) var(--space-5) 0; overflow-x: auto; }
+  .ds-toc nav { flex-direction: row; gap: var(--space-2); width: max-content; }
+  .ds-toc .toc-group { display: none; }
+  .ds-toc a { border: 1px solid var(--color-border); background: var(--color-surface); white-space: nowrap; }
+  .ds-main { padding: var(--space-7) var(--space-5) var(--space-11); gap: 56px; }
+}
+@media (max-width: 720px) {
+  .ds-top { padding: 0 var(--space-5); }
+  .ds-top .version { display: none; }
+  .ds-grid-2, .ds-grid-3, .ds-dodont { grid-template-columns: minmax(0, 1fr); }
+  .ds-frame { padding: var(--space-5); }
+  .ds-intro h1 { font-size: var(--text-2xl); line-height: var(--leading-2xl); }
+}
+
+/* ───────── Brand ───────── */
+.mark { display: block; flex: none; --mark-plate: var(--color-accent-emphasis); --mark-ink: var(--color-fg-on-emphasis); }
+.wordmark { font-weight: var(--weight-bold); letter-spacing: -0.015em; color: var(--color-fg); }
+.brand-tiles { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-5); }
+.brand-tile { border: 1px solid var(--color-border); border-radius: var(--radius-lg); min-height: 180px; display: grid; place-items: center; padding: var(--space-7); position: relative; }
+.brand-tile .ds-caption { position: absolute; left: var(--space-5); bottom: var(--space-4); }
+.brand-tile.light { background: var(--gray-0); }
+.brand-tile.dark { background: var(--gray-950); }
+.brand-tile.light .wordmark { color: var(--gray-900); }
+.brand-tile.light .ds-caption { color: var(--gray-600); }
+.brand-tile.dark .wordmark { color: #e6e9ee; }
+.brand-tile.dark .ds-caption { color: #858f9d; }
+.brand-tile.dark .mark { --mark-plate: #3a5bff; }
+.brand-tile.light .mark { --mark-plate: #2447f5; }
+.brand-tile.light .descriptor { color: var(--gray-600); }
+.brand-tile.dark .descriptor { color: #aab2bf; }
+.lockup-lg { display: flex; align-items: center; gap: 14px; }
+.lockup-lg .wordmark { font-size: 34px; line-height: 1; }
+.lockup-lg .descriptor { font-size: var(--text-sm); margin-top: 6px; }
+@media (max-width: 860px) { .brand-tiles { grid-template-columns: minmax(0, 1fr); } }
+
+/* ───────── Color swatches ───────── */
+.scale { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-border); }
+.scale.short { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+.scale > div { height: 56px; display: flex; flex-direction: column; justify-content: flex-end; padding: 6px; font-size: 10.5px; line-height: 13px; font-family: var(--font-mono); }
+.scale-label { display: flex; justify-content: space-between; font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.scale-wrap { overflow-x: auto; }
+.scale-wrap .scale { min-width: 640px; }
+.sem-table td:first-child { white-space: nowrap; }
+.chip-swatch { display: inline-block; width: 20px; height: 20px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); vertical-align: middle; }
+.dual { display: inline-flex; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--color-border); }
+.dual span { width: 22px; height: 22px; display: block; }
+.pairs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.pair { border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden; background: var(--color-surface); }
+.pair .top { height: 64px; display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-5); font-weight: var(--weight-semibold); }
+.pair .bottom { padding: var(--space-4) var(--space-5); font-size: var(--text-sm); color: var(--color-fg-muted); display: flex; flex-direction: column; gap: 2px; }
+@media (max-width: 720px) { .pairs { grid-template-columns: minmax(0, 1fr); } }
+
+/* ───────── Type specimen ───────── */
+.type-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--space-5); padding: var(--space-5) 0; border-bottom: 1px solid var(--color-border-muted); align-items: baseline; }
+.type-row:last-child { border-bottom: 0; }
+.type-row .meta { font-size: var(--text-xs); color: var(--color-fg-subtle); display: flex; flex-direction: column; gap: 2px; }
+.type-row .meta b { color: var(--color-fg); font-weight: var(--weight-semibold); font-size: var(--text-sm); }
+@media (max-width: 720px) { .type-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); } }
+
+/* ───────── Foundations: space, radius, elevation ───────── */
+.space-row { display: grid; grid-template-columns: 90px 50px minmax(0, 1fr); gap: var(--space-4); align-items: center; font-size: var(--text-sm); padding: 3px 0; }
+.space-row .bar { height: 12px; background: var(--color-accent-muted); border-radius: 2px; }
+.radius-demo { width: 72px; height: 56px; border: 1.5px solid var(--color-border-input); background: var(--color-surface-subtle); }
+.elev { height: 96px; border-radius: var(--radius-lg); background: var(--color-surface); border: 1px solid var(--color-border); display: flex; flex-direction: column; justify-content: flex-end; padding: var(--space-4); font-size: var(--text-sm); }
+.elev b { font-weight: var(--weight-semibold); }
+.motion-demo { display: flex; align-items: center; gap: var(--space-5); }
+.motion-track { position: relative; height: 32px; flex: 1; background: var(--color-surface-sunken); border-radius: var(--radius-md); overflow: hidden; }
+.motion-dot { position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; border-radius: var(--radius-sm); background: var(--color-accent-emphasis); transition: transform var(--duration-slow) var(--ease-out); }
+.motion-track.go .motion-dot { transform: translateX(calc(var(--track-w, 300px) - 32px)); }
+
+/* ───────── Buttons ───────── */
+.btn {
+  --btn-h: var(--control-md);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: var(--btn-h); padding: 0 12px; border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong); background: var(--color-surface-subtle); color: var(--color-fg);
+  font-size: var(--text-md); font-weight: var(--weight-medium); line-height: 1; white-space: nowrap; cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast);
+}
+.btn:hover { background: var(--color-surface-hover); text-decoration: none; }
+.btn:active { background: var(--color-surface-sunken); }
+.btn--primary { background: var(--color-accent-emphasis); border-color: transparent; color: var(--color-fg-on-emphasis); }
+.btn--primary:hover { background: var(--color-accent-emphasis-hover); }
+.btn--primary:active { background: var(--color-accent-emphasis-hover); }
+.btn--subtle { background: transparent; border-color: transparent; box-shadow: none; color: var(--color-fg-muted); }
+.btn--subtle:hover { background: var(--color-surface-hover); color: var(--color-fg); }
+.btn--danger { color: var(--color-danger-fg); }
+.btn--danger:hover { background: var(--color-danger-emphasis); border-color: transparent; color: var(--color-fg-on-emphasis); }
+.btn--danger-solid { background: var(--color-danger-emphasis); border-color: transparent; color: var(--color-fg-on-emphasis); }
+.btn--danger-solid:hover { background: var(--color-danger-emphasis-hover); }
+.btn--link { height: auto; padding: 0; border: 0; background: none; box-shadow: none; color: var(--color-accent-fg); }
+.btn--link:hover { background: none; text-decoration: underline; text-underline-offset: 2px; }
+.btn--sm { --btn-h: var(--control-sm); padding: 0 10px; font-size: var(--text-sm); }
+.btn--lg { --btn-h: var(--control-lg); padding: 0 16px; font-size: var(--text-md); }
+.btn--icon { width: var(--btn-h); padding: 0; }
+.btn--block { width: 100%; }
+.btn:disabled, .btn[aria-disabled="true"] { background: var(--color-surface-sunken); border-color: var(--color-border); color: var(--color-fg-disabled); box-shadow: none; cursor: not-allowed; }
+.btn--subtle:disabled { background: transparent; border-color: transparent; }
+.btn[aria-busy="true"] { cursor: progress; }
+.btn .trail { margin-left: 2px; color: inherit; opacity: 0.8; }
+.btn .count { font-size: var(--text-xs); font-weight: var(--weight-semibold); background: var(--color-surface-sunken); padding: 1px 6px; border-radius: var(--radius-full); line-height: 16px; }
+.btn--primary .count { background: rgb(255 255 255 / 0.2); }
+.btn-group { display: inline-flex; }
+.btn-group .btn { border-radius: 0; }
+.btn-group .btn + .btn { margin-left: -1px; }
+.btn-group .btn:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); }
+.btn-group .btn:last-child { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+.btn-group .btn--primary + .btn--primary { border-left: 1px solid rgb(255 255 255 / 0.25); margin-left: 0; }
+
+/* ───────── Spinner, progress, skeleton ───────── */
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; opacity: 0.85; animation: spin 0.7s linear infinite; flex: none; }
+.spinner--lg { width: 24px; height: 24px; border-width: 2.5px; }
+.spinner--accent { color: var(--color-accent-emphasis); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.progress { height: 8px; border-radius: var(--radius-full); background: var(--color-surface-sunken); overflow: hidden; }
+.progress > span { display: block; height: 100%; border-radius: inherit; background: var(--color-accent-emphasis); }
+.progress--sm { height: 4px; }
+.progress--success > span { background: var(--color-success-emphasis); }
+.skeleton { background: var(--color-skeleton); border-radius: var(--radius-sm); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.55; } }
+
+/* ───────── Form controls ───────── */
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field-label { font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--color-fg); display: flex; align-items: center; gap: var(--space-2); }
+.field-label .req { color: var(--color-danger-fg); }
+.field-label .opt { font-weight: var(--weight-regular); color: var(--color-fg-subtle); font-size: var(--text-sm); }
+.field-hint { font-size: var(--text-sm); color: var(--color-fg-subtle); }
+.field-error { font-size: var(--text-sm); color: var(--color-danger-fg); display: flex; align-items: flex-start; gap: 6px; }
+.field-error .lucide { margin-top: 2px; width: 14px; height: 14px; }
+.field-success { font-size: var(--text-sm); color: var(--color-success-fg); display: flex; align-items: center; gap: 6px; }
+.input, .select, .textarea {
+  width: 100%; height: var(--control-md); padding: 0 10px; border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-input); background: var(--color-surface); color: var(--color-fg);
+  font-size: var(--text-md); line-height: var(--leading-md);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+.input::placeholder, .textarea::placeholder { color: var(--color-fg-subtle); }
+.input:hover, .select:hover, .textarea:hover { border-color: var(--color-fg-subtle); }
+.input:focus, .select:focus, .textarea:focus, .input.is-focus { outline: none; border-color: var(--color-focus); box-shadow: 0 0 0 1px var(--color-focus); }
+.input[aria-invalid="true"], .textarea[aria-invalid="true"] { border-color: var(--color-danger-emphasis); }
+.input[aria-invalid="true"]:focus { box-shadow: 0 0 0 1px var(--color-danger-emphasis); }
+.input:disabled, .select:disabled, .textarea:disabled { background: var(--color-surface-sunken); border-color: var(--color-border); color: var(--color-fg-disabled); cursor: not-allowed; }
+.input[readonly] { background: var(--color-surface-subtle); border-color: var(--color-border-strong); }
+.input--sm { height: var(--control-sm); font-size: var(--text-sm); }
+.input--lg { height: var(--control-lg); }
+.input--mono { font-family: var(--font-mono); font-size: var(--text-sm); }
+.textarea { height: auto; min-height: 88px; padding: 8px 10px; resize: vertical; }
+.input-wrap { position: relative; display: flex; align-items: center; }
+.input-wrap > .lucide { position: absolute; left: 10px; color: var(--color-fg-subtle); pointer-events: none; }
+.input-wrap > .input { padding-left: 32px; }
+.input-wrap > .trail { position: absolute; right: 6px; display: flex; align-items: center; gap: 4px; }
+.input-wrap.has-trail > .input { padding-right: 72px; }
+.select-wrap { position: relative; display: flex; align-items: center; }
+.select { appearance: none; -webkit-appearance: none; padding-right: 32px; cursor: pointer; }
+.select-wrap > .lucide { position: absolute; right: 10px; pointer-events: none; color: var(--color-fg-muted); }
+.input-group { display: flex; min-width: 0; }
+.input-group .input { border-radius: var(--radius-md) 0 0 var(--radius-md); min-width: 0; }
+.input-group .btn { border-radius: 0 var(--radius-md) var(--radius-md) 0; margin-left: -1px; box-shadow: none; }
+.prefix-group { display: flex; min-width: 0; }
+.prefix-group .prefix { display: flex; align-items: center; padding: 0 10px; border: 1px solid var(--color-border-input); border-right: 0; border-radius: var(--radius-md) 0 0 var(--radius-md); background: var(--color-surface-subtle); color: var(--color-fg-muted); font-size: var(--text-sm); white-space: nowrap; }
+.prefix-group .input { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+
+.check, .radio { appearance: none; -webkit-appearance: none; margin: 0; width: 16px; height: 16px; flex: none; border: 1px solid var(--color-border-input); background: var(--color-surface); cursor: pointer; display: inline-grid; place-items: center; transition: background-color var(--duration-fast), border-color var(--duration-fast); }
+.check { border-radius: var(--radius-sm); }
+.radio { border-radius: 50%; }
+.check:checked, .check:indeterminate { background: var(--color-accent-emphasis); border-color: var(--color-accent-emphasis); }
+.check:checked::after { content: ''; width: 10px; height: 10px; background: var(--color-fg-on-emphasis); clip-path: polygon(14% 52%, 0 66%, 38% 100%, 100% 22%, 86% 8%, 38% 72%); }
+.check:indeterminate::after { content: ''; width: 8px; height: 2px; background: var(--color-fg-on-emphasis); border-radius: 1px; }
+.radio:checked { border: 5px solid var(--color-accent-emphasis); }
+.check:disabled, .radio:disabled { background: var(--color-surface-sunken); border-color: var(--color-border-strong); cursor: not-allowed; }
+.check:disabled:checked { background: var(--color-fg-disabled); border-color: var(--color-fg-disabled); }
+.radio:disabled:checked { border-color: var(--color-fg-disabled); background: var(--color-surface); }
+.choice { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: var(--text-md); }
+.choice > input { margin-top: 2px; }
+.choice .choice-text { display: flex; flex-direction: column; gap: 2px; }
+.choice .choice-text small { font-size: var(--text-sm); color: var(--color-fg-subtle); }
+.choice.is-disabled { cursor: not-allowed; color: var(--color-fg-disabled); }
+.choice.is-disabled small { color: var(--color-fg-disabled); }
+
+.switch { position: relative; width: 36px; height: 20px; flex: none; border-radius: var(--radius-full); border: 1px solid var(--color-border-input); background: var(--color-surface-sunken); cursor: pointer; padding: 0; transition: background-color var(--duration-base) var(--ease-standard), border-color var(--duration-base); }
+.switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--color-fg-muted); transition: transform var(--duration-base) var(--ease-out), background-color var(--duration-base); }
+.switch[aria-checked="true"] { background: var(--color-accent-emphasis); border-color: var(--color-accent-emphasis); }
+.switch[aria-checked="true"]::after { transform: translateX(16px); background: var(--color-fg-on-emphasis); }
+.switch:disabled { opacity: 0.5; cursor: not-allowed; }
+.switch-row { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); padding: var(--space-4) 0; border-bottom: 1px solid var(--color-border-muted); }
+.switch-row:last-child { border-bottom: 0; }
+.switch-row .t { font-weight: var(--weight-semibold); }
+.switch-row .d { font-size: var(--text-sm); color: var(--color-fg-subtle); margin-top: 2px; }
+
+.segmented { display: inline-flex; padding: 2px; gap: 2px; border-radius: var(--radius-md); background: var(--color-surface-sunken); border: 1px solid var(--color-border); }
+.segmented button { height: 26px; padding: 0 10px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-fg-muted); font-size: var(--text-sm); font-weight: var(--weight-medium); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.segmented button:hover { color: var(--color-fg); }
+.segmented button[aria-pressed="true"] { background: var(--color-surface); color: var(--color-fg); box-shadow: var(--shadow-sm), 0 0 0 1px var(--color-border); }
+
+.dropzone { border: 1px dashed var(--color-border-input); border-radius: var(--radius-lg); background: var(--color-surface-subtle); padding: var(--space-7); display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; cursor: pointer; transition: background-color var(--duration-fast), border-color var(--duration-fast); }
+.dropzone:hover, .dropzone.is-over { border-color: var(--color-accent-emphasis); background: var(--color-accent-subtle); }
+.dropzone .dz-icon { width: 40px; height: 40px; border-radius: var(--radius-md); display: grid; place-items: center; background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-fg-muted); }
+.dropzone .dz-title { font-weight: var(--weight-semibold); }
+.dropzone .dz-sub { font-size: var(--text-sm); color: var(--color-fg-subtle); }
+
+.tag-input { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: var(--control-md); padding: 3px 6px; border: 1px solid var(--color-border-input); border-radius: var(--radius-md); background: var(--color-surface); }
+.tag-input:focus-within { border-color: var(--color-focus); box-shadow: 0 0 0 1px var(--color-focus); }
+.tag-input input { flex: 1; min-width: 80px; border: 0; outline: 0; background: transparent; height: 24px; font-size: var(--text-md); }
+.tag-input input::placeholder { color: var(--color-fg-subtle); }
+
+/* ───────── Labels, tags, counters, avatars ───────── */
+.label { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: var(--radius-full); border: 1px solid var(--color-border-strong); font-size: var(--text-xs); font-weight: var(--weight-medium); line-height: 1; color: var(--color-fg-muted); white-space: nowrap; background: transparent; }
+.label .lucide { width: 12px; height: 12px; }
+.label--accent { color: var(--color-accent-fg); border-color: var(--color-accent-muted); background: var(--color-accent-subtle); }
+.label--success { color: var(--color-success-fg); border-color: var(--color-success-muted); background: var(--color-success-subtle); }
+.label--attention { color: var(--color-attention-fg); border-color: var(--color-attention-muted); background: var(--color-attention-subtle); }
+.label--danger { color: var(--color-danger-fg); border-color: var(--color-danger-muted); background: var(--color-danger-subtle); }
+.label--done { color: var(--color-done-fg); border-color: var(--color-done-muted); background: var(--color-done-subtle); }
+.label--teal { color: var(--color-teal-fg); border-color: var(--color-teal-muted); background: var(--color-teal-subtle); }
+.label--neutral { background: var(--color-surface-sunken); border-color: var(--color-border); }
+.label--solid { background: var(--color-surface-inverse); border-color: transparent; color: var(--color-fg-inverse); }
+.label--lg { height: 24px; padding: 0 9px; font-size: var(--text-sm); }
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--color-fg-muted); white-space: nowrap; }
+.status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--color-fg-subtle); flex: none; }
+.status--success::before { background: var(--color-success-emphasis); }
+.status--attention::before { background: var(--color-attention-emphasis); }
+.status--danger::before { background: var(--color-danger-emphasis); }
+.status--accent::before { background: var(--color-accent-emphasis); }
+.status--neutral::before { background: var(--color-border-strong); }
+.tag { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: var(--radius-sm); background: var(--color-surface-sunken); color: var(--color-fg-muted); font-size: var(--text-xs); font-weight: var(--weight-medium); white-space: nowrap; }
+a.tag:hover { color: var(--color-accent-fg); text-decoration: none; background: var(--color-accent-subtle); }
+.tag .tag-x { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: -4px; border: 0; padding: 0; border-radius: 3px; background: none; color: inherit; cursor: pointer; }
+.tag .tag-x:hover { background: var(--color-border); }
+.tag .tag-x .lucide { width: 12px; height: 12px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: var(--control-sm); padding: 0 10px; border-radius: var(--radius-full); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-fg-muted); font-size: var(--text-sm); font-weight: var(--weight-medium); cursor: pointer; }
+.chip:hover { border-color: var(--color-fg-subtle); color: var(--color-fg); }
+.chip[aria-pressed="true"] { background: var(--color-accent-subtle); border-color: var(--color-accent-muted); color: var(--color-accent-fg); }
+.chip .chip-check { display: none; }
+.chip[aria-pressed="true"] .chip-check { display: inline-block; }
+.chip .counter { margin-left: 2px; }
+.counter { display: inline-grid; place-items: center; min-width: 20px; height: 18px; padding: 0 6px; border-radius: var(--radius-full); background: var(--color-surface-sunken); color: var(--color-fg-muted); font-size: var(--text-xs); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; line-height: 1; }
+.counter--accent { background: var(--color-accent-emphasis); color: var(--color-fg-on-emphasis); }
+.counter--danger { background: var(--color-danger-emphasis); color: var(--color-fg-on-emphasis); }
+.kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border: 1px solid var(--color-border-strong); border-bottom-width: 2px; border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-fg-muted); font-size: 11px; font-family: var(--font-mono); line-height: 1; }
+
+.avatar { --size: 28px; width: var(--size); height: var(--size); border-radius: 50%; flex: none; display: inline-grid; place-items: center; color: var(--color-fg-on-emphasis); font-size: calc(var(--size) * 0.4); font-weight: var(--weight-semibold); line-height: 1; background: var(--color-avatar-1); user-select: none; }
+.avatar--xs { --size: 20px; font-size: 9px; }
+.avatar--sm { --size: 24px; }
+.avatar--lg { --size: 40px; }
+.avatar--xl { --size: 56px; }
+.avatar.c2 { background: var(--color-avatar-2); } .avatar.c3 { background: var(--color-avatar-3); }
+.avatar.c4 { background: var(--color-avatar-4); } .avatar.c5 { background: var(--color-avatar-5); }
+.avatar.c6 { background: var(--color-avatar-6); }
+.avatar--org { border-radius: var(--radius-md); }
+.avatar-stack { display: inline-flex; }
+.avatar-stack .avatar { box-shadow: 0 0 0 2px var(--color-surface); }
+.avatar-stack .avatar + .avatar { margin-left: -6px; }
+.avatar-stack .more { background: var(--color-surface-sunken); color: var(--color-fg-muted); }
+.person { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.person .who { display: flex; flex-direction: column; min-width: 0; }
+.person .name { font-weight: var(--weight-semibold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.person .email { font-size: var(--text-sm); color: var(--color-fg-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.type-icon { width: 32px; height: 32px; border-radius: var(--radius-md); display: grid; place-items: center; flex: none; }
+.type-icon--sm { width: 24px; height: 24px; border-radius: var(--radius-sm); }
+.type-icon--sm .lucide { width: 14px; height: 14px; }
+.type-icon--link { background: var(--color-type-link-bg); color: var(--color-type-link-fg); }
+.type-icon--file { background: var(--color-type-file-bg); color: var(--color-type-file-fg); }
+.type-icon--doc { background: var(--color-type-doc-bg); color: var(--color-type-doc-fg); }
+
+/* ───────── Alerts & banners ───────── */
+.alert { display: flex; gap: var(--space-4); align-items: flex-start; padding: var(--space-4) var(--space-5); border: 1px solid; border-radius: var(--radius-lg); font-size: var(--text-md); }
+.alert > .lucide { margin-top: 2px; }
+.alert .alert-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.alert .alert-title { font-weight: var(--weight-semibold); color: var(--color-fg); }
+.alert .alert-text { color: var(--color-fg-muted); }
+.alert .alert-actions { display: flex; gap: var(--space-3); margin-top: var(--space-3); flex-wrap: wrap; }
+.alert--info { background: var(--color-accent-subtle); border-color: var(--color-accent-muted); } .alert--info > .lucide { color: var(--color-accent-fg); }
+.alert--success { background: var(--color-success-subtle); border-color: var(--color-success-muted); } .alert--success > .lucide { color: var(--color-success-fg); }
+.alert--attention { background: var(--color-attention-subtle); border-color: var(--color-attention-muted); } .alert--attention > .lucide { color: var(--color-attention-fg); }
+.alert--danger { background: var(--color-danger-subtle); border-color: var(--color-danger-muted); } .alert--danger > .lucide { color: var(--color-danger-fg); }
+.banner { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-5); font-size: var(--text-md); border-bottom: 1px solid; }
+.banner--attention { background: var(--color-attention-subtle); border-color: var(--color-attention-muted); color: var(--color-fg); }
+.banner--attention > .lucide { color: var(--color-attention-fg); }
+.banner .spacer { flex: 1; }
+.inline-note { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--color-fg-muted); }
+.inline-note .lucide { width: 14px; height: 14px; color: var(--color-fg-subtle); }
+
+/* ───────── Toast ───────── */
+.toast-region { position: fixed; z-index: var(--z-toast); right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-end; pointer-events: none; max-width: calc(100vw - 32px); }
+.toast { pointer-events: auto; display: flex; align-items: center; gap: var(--space-4); min-height: 44px; padding: 10px 12px 10px 14px; border-radius: var(--radius-lg); background: var(--color-surface-inverse); color: var(--color-fg-inverse); box-shadow: var(--shadow-lg); font-size: var(--text-md); max-width: 440px; animation: toast-in var(--duration-slow) var(--ease-out); }
+.toast .t-icon { color: var(--color-fg-inverse); }
+.toast--success .t-icon { color: var(--color-success-muted); }
+.toast--danger .t-icon { color: var(--color-danger-muted); }
+.toast .t-text { flex: 1; min-width: 0; }
+.toast .t-action { border: 0; background: none; color: var(--color-fg-inverse); font-weight: var(--weight-semibold); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; padding: 4px; }
+.toast .t-close { border: 0; background: none; color: var(--color-fg-inverse); opacity: 0.7; cursor: pointer; display: grid; place-items: center; padding: 4px; border-radius: var(--radius-sm); }
+.toast .t-close:hover { opacity: 1; }
+.toast.static { animation: none; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+
+/* ───────── Empty states ───────── */
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-9) var(--space-6); }
+.empty .e-icon { width: 48px; height: 48px; border-radius: var(--radius-lg); display: grid; place-items: center; background: var(--color-surface-sunken); color: var(--color-fg-muted); margin-bottom: var(--space-2); }
+.empty .e-icon .lucide { width: 22px; height: 22px; }
+.empty h4 { font-size: var(--text-lg); line-height: var(--leading-lg); font-weight: var(--weight-semibold); }
+.empty p { color: var(--color-fg-muted); max-width: 46ch; }
+.empty .e-actions { display: flex; gap: var(--space-3); flex-wrap: wrap; justify-content: center; margin-top: var(--space-3); }
+
+/* ───────── Tooltip ───────── */
+.tt { position: relative; display: inline-flex; }
+.tt > .tt-bubble { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(2px); padding: 5px 8px; border-radius: var(--radius-md); background: var(--color-surface-inverse); color: var(--color-fg-inverse); font-size: var(--text-xs); line-height: var(--leading-xs); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity var(--duration-fast), transform var(--duration-fast) var(--ease-out); z-index: var(--z-menu); }
+.tt:hover > .tt-bubble, .tt:focus-within > .tt-bubble, .tt.is-open > .tt-bubble { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ───────── Menus & popovers ───────── */
+.menu-anchor { position: relative; display: inline-flex; }
+.menu { position: absolute; z-index: var(--z-menu); top: calc(100% + 4px); left: 0; min-width: 240px; padding: 4px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); transform-origin: top left; animation: pop-in var(--duration-base) var(--ease-out); }
+.menu.right { left: auto; right: 0; transform-origin: top right; }
+.menu.static { position: static; animation: none; }
+.menu-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 32px; padding: 6px 8px; border: 0; border-radius: var(--radius-md); background: none; color: var(--color-fg); font-size: var(--text-md); text-align: left; cursor: pointer; }
+.menu-item:hover, .menu-item:focus-visible { background: var(--color-surface-hover); text-decoration: none; outline: none; }
+.menu-item .lucide { color: var(--color-fg-muted); }
+.menu-item .hint { margin-left: auto; color: var(--color-fg-subtle); font-size: var(--text-xs); }
+.menu-item .desc { display: block; font-size: var(--text-xs); color: var(--color-fg-subtle); }
+.menu-item.danger, .menu-item.danger .lucide { color: var(--color-danger-fg); }
+.menu-item.danger:hover { background: var(--color-danger-subtle); }
+.menu-item[aria-checked="true"] .check-mark { visibility: visible; }
+.menu-item .check-mark { visibility: hidden; color: var(--color-accent-fg); }
+.menu-sep { height: 1px; background: var(--color-border-muted); margin: 4px -4px; }
+.menu-heading { padding: 8px 8px 4px; font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--color-fg-subtle); }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.97) translateY(-2px); } }
+
+/* ───────── Dialog ───────── */
+dialog.dialog { padding: 0; border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-surface); color: var(--color-fg); box-shadow: var(--shadow-lg); width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: hidden; }
+dialog.dialog[open] { display: flex; flex-direction: column; animation: dialog-in var(--duration-slow) var(--ease-out); }
+dialog.dialog--wide { width: min(640px, calc(100vw - 32px)); }
+dialog.dialog::backdrop { background: var(--color-backdrop); }
+.dialog-head { display: flex; align-items: flex-start; gap: var(--space-4); padding: var(--space-5) var(--space-5) 0 var(--space-6); }
+.dialog-head h3 { flex: 1; font-size: var(--text-xl); line-height: var(--leading-xl); font-weight: var(--weight-semibold); }
+.dialog-head p { color: var(--color-fg-muted); margin-top: 4px; font-size: var(--text-md); }
+.dialog-body { padding: var(--space-5) var(--space-6); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-5); }
+.dialog-foot { display: flex; justify-content: flex-end; gap: var(--space-3); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--color-border-muted); flex-wrap: wrap; }
+.dialog-foot .left { margin-right: auto; display: flex; align-items: center; }
+.dialog-static { position: static; display: flex; flex-direction: column; width: 100%; max-width: 520px; border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-surface); box-shadow: var(--shadow-lg); }
+.danger-icon { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--color-danger-subtle); color: var(--color-danger-fg); flex: none; }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } }
+
+.role-options { display: grid; gap: var(--space-3); }
+.role-option { display: flex; gap: var(--space-4); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-lg); cursor: pointer; align-items: flex-start; }
+.role-option:hover { border-color: var(--color-border-strong); background: var(--color-surface-subtle); }
+.role-option:has(input:checked) { border-color: var(--color-accent-emphasis); background: var(--color-surface-selected); box-shadow: inset 0 0 0 1px var(--color-accent-emphasis); }
+.role-option .ro-title { font-weight: var(--weight-semibold); }
+.role-option .ro-desc { font-size: var(--text-sm); color: var(--color-fg-muted); margin-top: 2px; }
+.role-option > input { margin-top: 3px; }
+
+/* ───────── Navigation ───────── */
+.breadcrumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: var(--text-sm); color: var(--color-fg-subtle); }
+.breadcrumbs a { color: var(--color-fg-muted); }
+.breadcrumbs a:hover { color: var(--color-accent-fg); }
+.breadcrumbs .lucide { width: 14px; height: 14px; color: var(--color-fg-disabled); }
+.breadcrumbs [aria-current] { color: var(--color-fg); font-weight: var(--weight-medium); }
+
+.tabs { display: flex; gap: var(--space-2); border-bottom: 1px solid var(--color-border); overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 10px; border: 0; background: none; color: var(--color-fg-muted); font-size: var(--text-md); font-weight: var(--weight-medium); white-space: nowrap; cursor: pointer; }
+.tab:hover { color: var(--color-fg); text-decoration: none; }
+.tab:hover::before { content: ''; position: absolute; inset: 6px 0; border-radius: var(--radius-md); background: var(--color-surface-hover); z-index: -1; }
+.tab[aria-selected="true"] { color: var(--color-fg); font-weight: var(--weight-semibold); }
+.tab[aria-selected="true"]::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0; background: var(--color-accent-emphasis); }
+.tab { isolation: isolate; }
+.tab .lucide { color: var(--color-fg-subtle); }
+.tab[aria-selected="true"] .lucide { color: var(--color-fg-muted); }
+
+.side-nav { display: flex; flex-direction: column; gap: 1px; }
+.side-nav a { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 8px; border-radius: var(--radius-md); color: var(--color-fg-muted); font-size: var(--text-md); font-weight: var(--weight-medium); position: relative; }
+.side-nav a:hover { background: var(--color-surface-hover); color: var(--color-fg); text-decoration: none; }
+.side-nav a[aria-current="page"] { background: var(--color-surface-selected); color: var(--color-fg); font-weight: var(--weight-semibold); }
+.side-nav a[aria-current="page"]::before { content: ''; position: absolute; left: -8px; top: 6px; bottom: 6px; width: 3px; border-radius: 0 2px 2px 0; background: var(--color-accent-emphasis); }
+.side-nav a[aria-current="page"] .lucide { color: var(--color-accent-fg); }
+.side-nav .counter { margin-left: auto; }
+.side-nav .proj-sq { width: 16px; height: 16px; border-radius: 4px; flex: none; display: grid; place-items: center; font-size: 9px; font-weight: 700; color: var(--color-fg-on-emphasis); }
+.side-heading { display: flex; align-items: center; justify-content: space-between; padding: var(--space-5) 8px var(--space-2); font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--color-fg-subtle); }
+
+.tenant-switch { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--radius-md); background: none; cursor: pointer; text-align: left; }
+.tenant-switch:hover { background: var(--color-surface-hover); }
+.tenant-switch .ts-name { font-weight: var(--weight-semibold); font-size: var(--text-md); display: block; }
+.tenant-switch .ts-plan { font-size: var(--text-xs); color: var(--color-fg-subtle); display: block; }
+.tenant-switch > .lucide { margin-left: auto; color: var(--color-fg-subtle); }
+
+.pagination { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; font-size: var(--text-sm); color: var(--color-fg-muted); }
+.pagination .pages { display: flex; gap: 4px; }
+.page-btn { min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid transparent; border-radius: var(--radius-md); background: none; color: var(--color-fg-muted); cursor: pointer; font-variant-numeric: tabular-nums; display: inline-grid; place-items: center; }
+.page-btn:hover { background: var(--color-surface-hover); color: var(--color-fg); }
+.page-btn[aria-current="page"] { background: var(--color-accent-emphasis); color: var(--color-fg-on-emphasis); font-weight: var(--weight-semibold); }
+
+/* ───────── App shell preview ───────── */
+.shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 560px; background: var(--color-canvas); }
+.shell-side { background: var(--color-surface); border-right: 1px solid var(--color-border); padding: var(--space-4) var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.shell-side .side-foot { margin-top: auto; padding-top: var(--space-4); border-top: 1px solid var(--color-border-muted); }
+.shell-main { min-width: 0; display: flex; flex-direction: column; }
+.topbar { height: 52px; display: flex; align-items: center; gap: var(--space-4); padding: 0 var(--space-6); background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+.topbar .search-trigger { flex: 1; max-width: 420px; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 10px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface-subtle); color: var(--color-fg-subtle); font-size: var(--text-md); cursor: pointer; text-align: left; }
+.topbar .search-trigger:hover { border-color: var(--color-border-input); }
+.topbar .search-trigger .kbd { margin-left: auto; }
+.topbar .spacer { flex: 1; }
+.topbar .menu-btn { display: none; }
+.page-head { padding: var(--space-6) var(--space-6) 0; background: var(--color-surface); display: flex; flex-direction: column; gap: var(--space-3); }
+.page-head .ph-row { display: flex; align-items: flex-start; gap: var(--space-5); flex-wrap: wrap; }
+.page-head h1 { font-size: var(--text-2xl); line-height: var(--leading-2xl); font-weight: var(--weight-bold); letter-spacing: -0.01em; }
+.page-head .lede { color: var(--color-fg-muted); margin-top: 2px; }
+.page-head .ph-actions { margin-left: auto; display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.page-head .tabs { margin: 0 calc(var(--space-6) * -1); padding: 0 var(--space-5); border-bottom: 1px solid var(--color-border); }
+.shell-content { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); }
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .shell-side { display: none; }
+  .topbar { padding: 0 var(--space-4); }
+  .topbar .menu-btn { display: inline-flex; }
+  .topbar .search-trigger .kbd, .topbar .search-trigger .st-text { display: none; }
+  .topbar .search-trigger { flex: 0 0 auto; width: 32px; padding: 0; justify-content: center; }
+  .page-head { padding: var(--space-5) var(--space-4) 0; }
+  .page-head .tabs { margin: 0 calc(var(--space-4) * -1); padding: 0 var(--space-3); }
+  .shell-content { padding: var(--space-4); }
+}
+
+/* ───────── Toolbar ───────── */
+.toolbar { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.toolbar .grow { flex: 1; min-width: 200px; }
+.toolbar .sep { width: 1px; height: 20px; background: var(--color-border); }
+
+/* ───────── Knowledge items ───────── */
+.panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); min-width: 0; }
+.panel-head { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-border); flex-wrap: wrap; }
+.panel-head h4 { font-size: var(--text-md); font-weight: var(--weight-semibold); display: flex; align-items: center; gap: 8px; }
+.panel-head .ph-right { margin-left: auto; display: flex; gap: var(--space-3); align-items: center; }
+.panel-foot { padding: var(--space-3) var(--space-5); border-top: 1px solid var(--color-border); }
+.k-list { list-style: none; margin: 0; padding: 0; }
+.k-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-4); align-items: start; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-border-muted); position: relative; }
+.k-row:last-child { border-bottom: 0; }
+.k-row:hover { background: var(--color-surface-subtle); }
+.k-row.is-selected { background: var(--color-surface-selected); }
+.k-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.k-title { font-weight: var(--weight-semibold); color: var(--color-fg); font-size: var(--text-md); }
+.k-title:hover { color: var(--color-accent-fg); }
+.k-pin { color: var(--color-accent-fg); display: inline-flex; }
+.k-pin .lucide { width: 14px; height: 14px; }
+.k-desc { color: var(--color-fg-muted); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.k-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: var(--text-sm); color: var(--color-fg-subtle); }
+.k-meta > span { display: inline-flex; align-items: center; gap: 6px; }
+.k-meta .lucide { width: 14px; height: 14px; }
+.k-actions { display: flex; gap: 2px; align-items: center; }
+.k-url { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-fg-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+@media (max-width: 560px) {
+  .k-row { grid-template-columns: auto minmax(0, 1fr); }
+  .k-actions { grid-column: 2; justify-self: start; margin-left: -8px; }
+}
+
+.k-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
+.k-card { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); transition: border-color var(--duration-fast), box-shadow var(--duration-fast); min-width: 0; }
+.k-card:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-md); }
+.k-card .kc-top { display: flex; align-items: center; gap: var(--space-3); }
+.k-card .kc-top .k-actions { margin-left: auto; }
+.k-card .kc-cat { font-size: var(--text-xs); color: var(--color-fg-subtle); font-weight: var(--weight-medium); }
+.k-card .k-desc { margin-top: -4px; }
+.k-card .kc-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.k-card .kc-foot { margin-top: auto; padding-top: var(--space-3); border-top: 1px solid var(--color-border-muted); display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--color-fg-subtle); }
+.k-card .kc-foot .lock { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
+
+.dl { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 0; font-size: var(--text-md); }
+.dl dt, .dl dd { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--color-border-muted); }
+.dl dt { color: var(--color-fg-subtle); }
+.dl dd { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.dl dt:nth-last-of-type(1), .dl dd:last-of-type { border-bottom: 0; }
+
+.file-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-4); align-items: center; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-border-muted); }
+.file-row:last-child { border-bottom: 0; }
+.file-row .f-name { font-weight: var(--weight-semibold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-row .f-sub { font-size: var(--text-sm); color: var(--color-fg-subtle); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.file-row .progress { margin-top: 8px; max-width: 320px; }
+@media (max-width: 560px) { .file-row { grid-template-columns: auto minmax(0, 1fr); } .file-row > :last-child { grid-column: 2; } }
+
+/* ───────── Tables ───────── */
+.table-wrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--text-md); }
+.table th { text-align: left; font-size: var(--text-xs); font-weight: var(--weight-semibold); color: var(--color-fg-subtle); padding: 10px var(--space-5); background: var(--color-surface-subtle); border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+.table th button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.table th button:hover { color: var(--color-fg); }
+.table th button:focus-visible { outline: 2px solid var(--color-focus); border-radius: 2px; }
+.table td { padding: 10px var(--space-5); border-bottom: 1px solid var(--color-border-muted); vertical-align: middle; }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table tbody tr:hover { background: var(--color-surface-subtle); }
+.table .t-right { text-align: right; }
+.table .t-muted { color: var(--color-fg-subtle); font-size: var(--text-sm); white-space: nowrap; }
+.table .select-wrap { width: 150px; }
+.table code { font-size: var(--text-xs); background: var(--color-surface-sunken); padding: 2px 6px; border-radius: var(--radius-sm); color: var(--color-fg-muted); white-space: nowrap; }
+
+/* ───────── Onboarding ───────── */
+.ob-head { display: flex; align-items: center; gap: var(--space-5); padding: var(--space-5); border-bottom: 1px solid var(--color-border); flex-wrap: wrap; }
+.ob-head .ob-count { font-weight: var(--weight-semibold); }
+.ob-head .ob-sub { font-size: var(--text-sm); color: var(--color-fg-subtle); }
+.ob-head .progress { flex: 1; min-width: 160px; }
+.step { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-4); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-border-muted); align-items: start; }
+.step:last-child { border-bottom: 0; }
+.step-toggle { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--color-border-input); background: var(--color-surface); display: grid; place-items: center; cursor: pointer; padding: 0; color: transparent; margin-top: 1px; transition: background-color var(--duration-base), border-color var(--duration-base); }
+.step-toggle .lucide { width: 14px; height: 14px; stroke-width: 2.5; }
+.step-toggle:hover { border-color: var(--color-accent-emphasis); color: var(--color-accent-muted); }
+.step-toggle[aria-checked="true"] { background: var(--color-success-emphasis); border-color: var(--color-success-emphasis); color: var(--color-fg-on-emphasis); }
+.step .s-title { font-weight: var(--weight-semibold); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.step .s-text { color: var(--color-fg-muted); margin-top: 2px; max-width: 70ch; }
+.step .s-link { margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--color-fg); background: var(--color-surface-subtle); }
+.step .s-link:hover { border-color: var(--color-accent-muted); text-decoration: none; }
+.step.is-done .s-title span:first-child { color: var(--color-fg-subtle); text-decoration: line-through; text-decoration-thickness: 1px; }
+.step .s-when { font-size: var(--text-xs); color: var(--color-fg-subtle); white-space: nowrap; }
+
+/* ───────── Invitations ───────── */
+.invite-card { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5); }
+.invite-card .ic-top { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.invite-card .ic-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: var(--text-sm); color: var(--color-fg-subtle); }
+.invite-card .ic-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.invite-card .ic-meta .lucide { width: 14px; height: 14px; }
+
+/* ───────── Access rules matrix ───────── */
+.matrix { width: 100%; border-collapse: collapse; font-size: var(--text-md); }
+.matrix th, .matrix td { padding: 10px var(--space-4); border-bottom: 1px solid var(--color-border-muted); }
+.matrix thead th { font-size: var(--text-xs); color: var(--color-fg-subtle); font-weight: var(--weight-semibold); text-align: center; background: var(--color-surface-subtle); border-bottom-color: var(--color-border); }
+.matrix thead th:first-child { text-align: left; }
+.matrix td { text-align: center; }
+.matrix td:first-child { text-align: left; }
+.matrix tbody tr:last-child td { border-bottom: 0; }
+.matrix .rname { font-weight: var(--weight-semibold); display: block; }
+.matrix .rdesc { font-size: var(--text-xs); color: var(--color-fg-subtle); }
+
+/* ───────── Command palette ───────── */
+.palette { width: 100%; max-width: 600px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); overflow: hidden; }
+.palette .p-input { display: flex; align-items: center; gap: 10px; padding: 0 var(--space-5); height: 52px; border-bottom: 1px solid var(--color-border); }
+.palette .p-input input { flex: 1; border: 0; outline: 0; background: transparent; font-size: var(--text-lg); min-width: 0; }
+.palette .p-input .lucide { width: 18px; height: 18px; color: var(--color-fg-subtle); }
+.palette .p-group { padding: 6px; }
+.palette .p-group + .p-group { border-top: 1px solid var(--color-border-muted); }
+.palette .p-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius-md); cursor: pointer; min-width: 0; }
+.palette .p-item:hover, .palette .p-item[aria-selected="true"] { background: var(--color-surface-selected); }
+.palette .p-item .p-text { min-width: 0; flex: 1; }
+.palette .p-item .p-title { font-weight: var(--weight-medium); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.palette .p-item .p-title mark { background: none; color: var(--color-accent-fg); font-weight: var(--weight-semibold); }
+.palette .p-item .p-sub { font-size: var(--text-xs); color: var(--color-fg-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.palette .p-item .p-enter { visibility: hidden; color: var(--color-fg-subtle); }
+.palette .p-item[aria-selected="true"] .p-enter { visibility: visible; }
+.palette .p-foot { display: flex; gap: var(--space-5); padding: 8px var(--space-5); border-top: 1px solid var(--color-border); background: var(--color-surface-subtle); font-size: var(--text-xs); color: var(--color-fg-subtle); flex-wrap: wrap; }
+.palette .p-foot span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ───────── Auth ───────── */
+.auth-card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: var(--space-5); }
+.auth-card h3 { font-size: var(--text-2xl); line-height: var(--leading-2xl); font-weight: var(--weight-bold); letter-spacing: -0.01em; }
+.auth-card .sub { color: var(--color-fg-muted); margin-top: 4px; }
+.btn--google { background: var(--color-surface); }
+.divider { display: flex; align-items: center; gap: var(--space-4); font-size: var(--text-sm); color: var(--color-fg-subtle); }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--color-border); }
+.auth-stage { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-8); align-items: start; }
+@media (max-width: 860px) { .auth-stage { grid-template-columns: minmax(0, 1fr); } }
+.invite-hero { display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-7); border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-surface); }
+.invite-hero .ih-proj { display: flex; align-items: center; gap: var(--space-4); }
+.invite-hero .ih-proj .avatar--org { --size: 48px; font-size: 18px; }
+.invite-hero ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-3); }
+.invite-hero li { display: flex; gap: 10px; align-items: flex-start; color: var(--color-fg-muted); }
+.invite-hero li .lucide { margin-top: 2px; color: var(--color-success-fg); }
+
+/* ───────── Code block ───────── */
+.code { position: relative; background: var(--color-surface-sunken); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden; }
+.code pre { margin: 0; padding: var(--space-5); max-height: 420px; overflow: auto; font-size: 12.5px; line-height: 1.6; color: var(--color-fg); }
+.code .btn { position: absolute; top: 8px; right: 8px; }
+
+/* ───────── Activity feed ───────── */
+.feed { list-style: none; margin: 0; padding: 0; }
+.feed li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-4); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-border-muted); align-items: start; }
+.feed li:last-child { border-bottom: 0; }
+.feed .f-text { color: var(--color-fg-muted); }
+.feed .f-text b { color: var(--color-fg); font-weight: var(--weight-semibold); }
+.feed .f-when { font-size: var(--text-xs); color: var(--color-fg-subtle); white-space: nowrap; }
+
+/* ───────── Project card ───────── */
+.proj-card { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-5); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); min-width: 0; }
+.proj-card:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-md); }
+.proj-card .pc-top { display: flex; align-items: center; gap: var(--space-4); }
+.proj-card .pc-name { font-weight: var(--weight-semibold); font-size: var(--text-lg); line-height: var(--leading-lg); color: var(--color-fg); }
+.proj-card .pc-ws { font-size: var(--text-sm); color: var(--color-fg-subtle); }
+.proj-card .pc-desc { color: var(--color-fg-muted); }
+.proj-card .pc-stats { display: flex; gap: var(--space-5); font-size: var(--text-sm); color: var(--color-fg-subtle); flex-wrap: wrap; }
+.proj-card .pc-stats span { display: inline-flex; align-items: center; gap: 6px; }
+.proj-card .pc-foot { display: flex; align-items: center; gap: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--color-border-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+</style>
+
+<!-- SVG sprite for the brand mark -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="tavern-mark" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10.5" style="fill:var(--mark-plate)"/>
+    <rect x="12" y="9" width="24" height="7" rx="3.5" style="fill:var(--mark-ink)"/>
+    <path d="M18.6 16h10.8l-1.5 9.2h-7.8z" style="fill:var(--mark-ink)"/>
+    <rect x="13.5" y="24.8" width="21" height="4.6" rx="2.3" style="fill:var(--mark-ink)"/>
+    <rect x="22.6" y="29" width="2.8" height="11" rx="1.4" style="fill:var(--mark-ink)"/>
+  </symbol>
+</svg>
+
+<header class="ds-top">
+  <div class="lockup">
+    <svg class="mark" width="28" height="28" aria-hidden="true"><use href="#tavern-mark"/></svg>
+    <span class="wordmark" style="font-size:18px">Tavern</span>
+    <span class="version">Design system 1.0</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="segmented" role="group" aria-label="Theme" id="theme-switch">
+    <button type="button" data-theme-set="system" aria-pressed="true"><i data-lucide="monitor"></i><span class="sr-only">System theme</span></button>
+    <button type="button" data-theme-set="light" aria-pressed="false"><i data-lucide="sun"></i><span class="sr-only">Light theme</span></button>
+    <button type="button" data-theme-set="dark" aria-pressed="false"><i data-lucide="moon"></i><span class="sr-only">Dark theme</span></button>
+  </div>
+</header>
+
+<div class="ds-layout">
+  <aside class="ds-toc" aria-label="Sections">
+    <nav>
+      <div class="toc-group">Foundations</div>
+      <a href="#brand">Brand</a>
+      <a href="#color">Color</a>
+      <a href="#type">Typography</a>
+      <a href="#space">Space, shape, motion</a>
+      <a href="#icons">Icons</a>
+      <div class="toc-group">Components</div>
+      <a href="#buttons">Buttons</a>
+      <a href="#forms">Form controls</a>
+      <a href="#labels">Labels and avatars</a>
+      <a href="#navigation">Navigation</a>
+      <a href="#knowledge">Knowledge items</a>
+      <a href="#files">Files and upload</a>
+      <a href="#tables">Tables</a>
+      <a href="#onboarding">Onboarding</a>
+      <a href="#access">Invitations and access</a>
+      <a href="#feedback">Feedback</a>
+      <a href="#overlays">Overlays</a>
+      <a href="#auth">Sign in</a>
+      <div class="toc-group">Hand-off</div>
+      <a href="#tokens">Token export</a>
+    </nav>
+  </aside>
+
+  <main class="ds-main" id="main">
+    <div class="ds-intro">
+      <h1>Tavern design system</h1>
+      <p>Tokens and components for Tavern, the project knowledge board. Dense, accessible, built for scanning many links quickly. One electric cobalt accent for action, semantic color for state, three fixed hues for item types.</p>
+      <div class="ds-meta">
+        <span>Version 1.0 · 14 Oct 2026</span>
+        <span>Target: WCAG 2.2 AA</span>
+        <span>People, projects and files on this page are example data</span>
+      </div>
+    </div>
+
+    <!-- ═════════ BRAND ═════════ -->
+    <section class="ds-section" id="brand">
+      <header>
+        <h2>Brand</h2>
+        <p>The mark is a pushpin seen from the side, which reads as a T. Pinning is how teams mark the sources that matter, and Tavern is the board they pin to. It always sits on a cobalt plate and never gets effects, outlines or gradients.</p>
+      </header>
+      <div class="brand-tiles">
+        <div class="brand-tile light">
+          <div class="lockup-lg">
+            <svg class="mark" width="52" height="52" aria-hidden="true"><use href="#tavern-mark"/></svg>
+            <div>
+              <div class="wordmark">Tavern</div>
+              <div class="descriptor">Project Knowledge Board</div>
+            </div>
+          </div>
+          <span class="ds-caption">Primary lockup on light</span>
+        </div>
+        <div class="brand-tile dark">
+          <div class="lockup-lg">
+            <svg class="mark" width="44" height="44" aria-hidden="true"><use href="#tavern-mark"/></svg>
+            <div class="wordmark" style="font-size:28px">Tavern</div>
+          </div>
+          <span class="ds-caption">Compact lockup on dark</span>
+        </div>
+        <div class="brand-tile light">
+          <div class="ds-row" style="gap:20px;align-items:flex-end">
+            <svg class="mark" width="64" height="64" aria-hidden="true"><use href="#tavern-mark"/></svg>
+            <svg class="mark" width="32" height="32" aria-hidden="true"><use href="#tavern-mark"/></svg>
+            <svg class="mark" width="16" height="16" aria-hidden="true"><use href="#tavern-mark"/></svg>
+          </div>
+          <span class="ds-caption">App icon 64 / 32 / 16</span>
+        </div>
+      </div>
+      <div class="ds-grid-3">
+        <div class="ds-block">
+          <h3>Name</h3>
+          <p class="ds-note">Write <b>Tavern</b> in running text. Use “Project Knowledge Board” only as the descriptor under the wordmark or on the sign-in page. Never “TAVERN” or “Tavern App”.</p>
+        </div>
+        <div class="ds-block">
+          <h3>Clear space</h3>
+          <p class="ds-note">Keep space equal to a quarter of the mark's width on every side. Minimum mark size is 16px; the descriptor needs 24px marks or larger. One-color use drops the plate and draws the pin in the text color.</p>
+        </div>
+        <div class="ds-block">
+          <h3>Wordmark</h3>
+          <p class="ds-note">Public Sans Bold, tracking −1.5%. The gap between mark and wordmark is 40% of the mark's width.</p>
+        </div>
+      </div>
+      <div class="ds-block">
+        <h3>Voice</h3>
+        <p class="spec">Plain, specific and calm. Name the action, say what happens to access, never hint at hidden things.</p>
+        <div class="ds-dodont">
+          <div class="do"><span class="verdict"><i data-lucide="circle-check"></i>Do</span><q>Archive item</q><span class="ds-caption">Buttons name the exact action.</span></div>
+          <div class="dont"><span class="verdict"><i data-lucide="circle-x"></i>Don't</span><q>Submit</q><span class="ds-caption">Generic verbs hide the consequence.</span></div>
+          <div class="do"><span class="verdict"><i data-lucide="circle-check"></i>Do</span><q>Arthit will lose access to Atlas Mobile App right away.</q><span class="ds-caption">State the access change and when it happens.</span></div>
+          <div class="dont"><span class="verdict"><i data-lucide="circle-x"></i>Don't</span><q>Are you sure? This action cannot be undone!</q><span class="ds-caption">Alarm without information.</span></div>
+          <div class="do"><span class="verdict"><i data-lucide="circle-check"></i>Do</span><q>This page isn't available. It may have moved, or you may not have access.</q><span class="ds-caption">Same message whether the item exists or not.</span></div>
+          <div class="dont"><span class="verdict"><i data-lucide="circle-x"></i>Don't</span><q>You don't have permission to view “Q3 pricing model”.</q><span class="ds-caption">Leaks the name of a restricted item.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ COLOR ═════════ -->
+    <section class="ds-section" id="color">
+      <header>
+        <h2>Color</h2>
+        <p>Cool neutrals carry the interface. Electric cobalt means interactive or selected and nothing else. It sits between classic link blue and indigo, saturated enough to be recognizably Tavern. Green, amber and red mean state. Item types own three fixed hues so a link, a file and a document are told apart before anyone reads the title.</p>
+      </header>
+
+      <div class="ds-block">
+        <h3>Primitive scales</h3>
+        <p class="spec">Reference only. Components use semantic tokens, never primitives.</p>
+        <div class="ds-stack">
+          <div class="ds-stack" style="gap:6px">
+            <div class="scale-label"><span>Gray</span><span class="ds-caption">--gray-*</span></div>
+            <div class="scale-wrap"><div class="scale" id="scale-gray"></div></div>
+          </div>
+          <div class="ds-stack" style="gap:6px">
+            <div class="scale-label"><span>Cobalt</span><span class="ds-caption">--blue-*</span></div>
+            <div class="scale-wrap"><div class="scale short" id="scale-blue"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ds-block">
+        <h3>Semantic tokens</h3>
+        <p class="spec">Swatches show light and dark values side by side. Contrast is measured against the surface the token is used on.</p>
+        <div class="panel">
+          <div class="table-wrap">
+            <table class="table sem-table">
+              <thead><tr><th>Token</th><th>Light · Dark</th><th>Use</th></tr></thead>
+              <tbody id="sem-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="ds-block">
+        <h3>Item types</h3>
+        <p class="spec">Fixed for the life of the product. Never reuse these hues for categories, tags or roles.</p>
+        <div class="pairs">
+          <div class="pair"><div class="top" style="background:var(--color-type-link-bg);color:var(--color-type-link-fg)"><i data-lucide="link-2"></i>External link</div><div class="bottom"><code>--color-type-link-*</code><span>Jira, GitHub, Figma, any URL</span></div></div>
+          <div class="pair"><div class="top" style="background:var(--color-type-file-bg);color:var(--color-type-file-fg)"><i data-lucide="paperclip"></i>Uploaded file</div><div class="bottom"><code>--color-type-file-*</code><span>PDF, images, office documents</span></div></div>
+          <div class="pair"><div class="top" style="background:var(--color-type-doc-bg);color:var(--color-type-doc-fg)"><i data-lucide="file-text"></i>Internal document</div><div class="bottom"><code>--color-type-doc-*</code><span>Markdown written in Tavern</span></div></div>
+        </div>
+      </div>
+
+      <div class="ds-block">
+        <h3>State mapping</h3>
+        <div class="panel">
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Domain</th><th>Success</th><th>Attention</th><th>Danger</th><th>Neutral</th><th>Accent</th></tr></thead>
+              <tbody>
+                <tr><td>File scan</td><td><span class="label label--success">Clean</span></td><td><span class="label label--attention">Scanning</span></td><td><span class="label label--danger">Quarantined</span></td><td><span class="label">Failed, retrying</span></td><td></td></tr>
+                <tr><td>Invitation</td><td><span class="label label--success">Active</span></td><td><span class="label label--attention">Expires in 1 day</span></td><td><span class="label label--danger">Revoked</span></td><td><span class="label label--neutral">Expired</span> <span class="label label--neutral">Used up</span></td><td><span class="label label--accent">Accepted</span></td></tr>
+                <tr><td>Audit outcome</td><td><span class="label label--success">Success</span></td><td></td><td><span class="label label--danger">Denied</span></td><td><span class="label">Failure</span></td><td></td></tr>
+                <tr><td>Item status</td><td></td><td></td><td></td><td><span class="label label--neutral"><i data-lucide="archive"></i>Archived</span></td><td><span class="label label--accent"><i data-lucide="pin"></i>Pinned</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ TYPE ═════════ -->
+    <section class="ds-section" id="type">
+      <header>
+        <h2>Typography</h2>
+        <p>Public Sans for everything people read and click: a neutral, highly legible workhorse with clear numerals. JetBrains Mono only for URLs, tokens, code and IDs. The base UI size is 14px.</p>
+      </header>
+      <div class="ds-frame">
+        <div class="type-row"><div class="meta"><b>Display</b><span>32 / 40 · Bold · −2%</span><code>--text-3xl</code></div><div style="font-size:32px;line-height:40px;font-weight:700;letter-spacing:-0.02em">Atlas Mobile App</div></div>
+        <div class="type-row"><div class="meta"><b>Page title</b><span>24 / 32 · Bold · −1%</span><code>--text-2xl</code></div><div style="font-size:24px;line-height:32px;font-weight:700;letter-spacing:-0.01em">Knowledge</div></div>
+        <div class="type-row"><div class="meta"><b>Section title</b><span>20 / 28 · Semibold</span><code>--text-xl</code></div><div style="font-size:20px;line-height:28px;font-weight:600">Pinned for new members</div></div>
+        <div class="type-row"><div class="meta"><b>Lead / large</b><span>16 / 24 · Regular</span><code>--text-lg</code></div><div style="font-size:16px;line-height:24px">Everything the delivery team needs to start on Atlas: designs, repositories, environments and the signed scope.</div></div>
+        <div class="type-row"><div class="meta"><b>Body / UI</b><span>14 / 20 · Regular, Medium, Semibold</span><code>--text-md</code></div><div style="font-size:14px;line-height:20px"><span style="font-weight:600">API reference (staging).</span> Swagger docs for every endpoint the mobile app calls. <span style="font-weight:500;color:var(--color-accent-fg)">Open link</span></div></div>
+        <div class="type-row"><div class="meta"><b>Small</b><span>13 / 20 · Regular</span><code>--text-sm</code></div><div style="font-size:13px;line-height:20px;color:var(--color-fg-muted)">Updated 2 days ago by Pim Chaiyaporn · Development</div></div>
+        <div class="type-row"><div class="meta"><b>Caption</b><span>12 / 16 · Medium, Semibold</span><code>--text-xs</code></div><div style="font-size:12px;line-height:16px;font-weight:600;color:var(--color-fg-subtle)">Last updated</div></div>
+        <div class="type-row"><div class="meta"><b>Mono</b><span>13 / 20 · JetBrains Mono</span><code>--font-mono</code></div><div class="mono" style="font-size:13px;line-height:20px;overflow-wrap:anywhere">https://tavern.app/invite/7Kq2…hX9a</div></div>
+      </div>
+      <p class="ds-note">Use sentence case everywhere, including buttons, tabs and table headers. Use tabular numerals in tables, counters and dates. Keep running text under 70 characters per line.</p>
+    </section>
+
+    <!-- ═════════ SPACE ═════════ -->
+    <section class="ds-section" id="space">
+      <header>
+        <h2>Space, shape, motion</h2>
+        <p>A 4px grid. Tight inside a group, generous between groups. Borders separate; shadows only lift things that float above the page.</p>
+      </header>
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Spacing scale</h3>
+          <div class="ds-frame" id="space-scale" style="padding:16px 20px"></div>
+        </div>
+        <div class="ds-stack">
+          <div class="ds-block">
+            <h3>Radius</h3>
+            <div class="ds-frame">
+              <div class="ds-row" style="gap:20px;align-items:flex-end">
+                <div class="ds-stack" style="gap:6px"><div class="radius-demo" style="border-radius:4px"></div><span class="ds-caption">sm 4 · tags, kbd</span></div>
+                <div class="ds-stack" style="gap:6px"><div class="radius-demo" style="border-radius:6px"></div><span class="ds-caption">md 6 · controls</span></div>
+                <div class="ds-stack" style="gap:6px"><div class="radius-demo" style="border-radius:8px"></div><span class="ds-caption">lg 8 · panels</span></div>
+                <div class="ds-stack" style="gap:6px"><div class="radius-demo" style="border-radius:12px"></div><span class="ds-caption">xl 12 · dialogs</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="ds-block">
+            <h3>Control heights</h3>
+            <div class="ds-frame">
+              <div class="ds-row" style="align-items:flex-end">
+                <button class="btn btn--sm" type="button">28 small</button>
+                <button class="btn" type="button">32 default</button>
+                <button class="btn btn--lg" type="button">40 large</button>
+              </div>
+              <p class="ds-caption" style="margin-top:12px">Small in dense tables and toolbars. Large only on sign-in and empty states. Touch targets on mobile get at least 40px of hit area.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ds-block">
+        <h3>Elevation</h3>
+        <div class="ds-frame canvas">
+          <div class="ds-grid-3">
+            <div class="elev" style="box-shadow:none"><b>Flat</b><span class="ds-caption">Panels, cards, tables. Border only.</span></div>
+            <div class="elev" style="box-shadow:var(--shadow-md)"><b>Raised · shadow-md</b><span class="ds-caption">Menus, popovers, hovered cards.</span></div>
+            <div class="elev" style="box-shadow:var(--shadow-lg)"><b>Overlay · shadow-lg</b><span class="ds-caption">Dialogs, toasts, command palette.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ds-block">
+        <h3>Motion</h3>
+        <p class="spec">Fast 100ms for hover and color. Base 160ms for toggles. Slow 240ms with ease-out for things that appear: menus, dialogs, toasts. Nothing animates on page load. Reduced motion turns all of it off.</p>
+        <div class="ds-frame">
+          <div class="motion-demo">
+            <div class="motion-track" id="motion-track"><div class="motion-dot"></div></div>
+            <button class="btn btn--sm" type="button" id="motion-play"><i data-lucide="play"></i>Play ease-out</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ ICONS ═════════ -->
+    <section class="ds-section" id="icons">
+      <header>
+        <h2>Icons</h2>
+        <p>Lucide, 1.75 stroke. 16px in controls and text, 14px in metadata, 20px in empty states. Icons support a label; icon-only buttons always carry an accessible name and a tooltip.</p>
+      </header>
+      <div class="ds-frame">
+        <div class="ds-row" id="icon-grid" style="gap:8px"></div>
+      </div>
+    </section>
+
+    <!-- ═════════ BUTTONS ═════════ -->
+    <section class="ds-section" id="buttons">
+      <header>
+        <h2>Buttons</h2>
+        <p>One primary button per view. Secondary for everything else. Danger buttons stay quiet until hovered, and destructive actions go through a confirm dialog.</p>
+      </header>
+      <div class="ds-block">
+        <h3>Variants</h3>
+        <p class="spec">Height 32 · padding 12 · radius 6 · label 14 medium</p>
+        <div class="ds-frame ds-stack">
+          <div class="ds-row">
+            <button class="btn btn--primary" type="button"><i data-lucide="plus"></i>Add knowledge</button>
+            <button class="btn" type="button"><i data-lucide="user-plus"></i>Invite members</button>
+            <button class="btn btn--subtle" type="button">Cancel</button>
+            <button class="btn btn--danger" type="button"><i data-lucide="trash-2"></i>Delete permanently</button>
+            <button class="btn btn--danger-solid" type="button">Remove member</button>
+            <button class="btn btn--link" type="button">View all activity</button>
+          </div>
+          <div class="ds-row">
+            <button class="btn btn--primary" type="button" disabled>Add knowledge</button>
+            <button class="btn" type="button" disabled>Invite members</button>
+            <button class="btn btn--primary" type="button" aria-busy="true"><span class="spinner"></span>Saving…</button>
+            <button class="btn" type="button" aria-busy="true"><span class="spinner"></span>Uploading</button>
+          </div>
+        </div>
+      </div>
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Sizes and icon buttons</h3>
+          <div class="ds-frame ds-stack">
+            <div class="ds-row">
+              <button class="btn btn--sm btn--primary" type="button">Save</button>
+              <button class="btn btn--sm" type="button"><i data-lucide="pin"></i>Pin</button>
+              <button class="btn btn--lg btn--primary" type="button">Create project</button>
+            </div>
+            <div class="ds-row">
+              <span class="tt"><button class="btn btn--icon" type="button" aria-label="Edit item"><i data-lucide="pencil"></i></button><span class="tt-bubble" role="tooltip">Edit</span></span>
+              <span class="tt"><button class="btn btn--icon btn--subtle" type="button" aria-label="Pin item"><i data-lucide="pin"></i></button><span class="tt-bubble" role="tooltip">Pin</span></span>
+              <span class="tt"><button class="btn btn--icon btn--subtle btn--sm" type="button" aria-label="More actions"><i data-lucide="ellipsis"></i></button><span class="tt-bubble" role="tooltip">More actions</span></span>
+              <span class="tt"><button class="btn btn--icon btn--danger btn--sm" type="button" aria-label="Revoke invitation"><i data-lucide="x"></i></button><span class="tt-bubble" role="tooltip">Revoke</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Groups, counts and split</h3>
+          <div class="ds-frame ds-stack">
+            <div class="ds-row">
+              <div class="btn-group" role="group" aria-label="Archive actions">
+                <button class="btn" type="button"><i data-lucide="archive"></i>Archive</button>
+                <button class="btn btn--icon" type="button" aria-label="More archive options"><i data-lucide="chevron-down"></i></button>
+              </div>
+              <button class="btn" type="button"><i data-lucide="users"></i>Members <span class="count num">12</span></button>
+            </div>
+            <div class="ds-row">
+              <div class="btn-group" role="group" aria-label="Add">
+                <button class="btn btn--primary" type="button"><i data-lucide="plus"></i>Add link</button>
+                <button class="btn btn--primary btn--icon" type="button" aria-label="Choose item type"><i data-lucide="chevron-down"></i></button>
+              </div>
+              <button class="btn btn--block" type="button" style="max-width:240px"><i data-lucide="download"></i>Download (2.4 MB)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ FORMS ═════════ -->
+    <section class="ds-section" id="forms">
+      <header>
+        <h2>Form controls</h2>
+        <p>Labels sit above fields and are always visible. Hints explain format; errors replace hints and name both the problem and the fix. Input borders meet 3:1 contrast.</p>
+      </header>
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Text fields</h3>
+          <div class="ds-frame ds-stack">
+            <div class="field">
+              <label class="field-label" for="f-title">Title <span class="req" aria-hidden="true">*</span></label>
+              <input class="input" id="f-title" value="Figma: Mobile app UI">
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-url">URL <span class="req" aria-hidden="true">*</span></label>
+              <input class="input input--mono" id="f-url" value="javascript:alert(1)" aria-invalid="true" aria-describedby="f-url-err">
+              <span class="field-error" id="f-url-err"><i data-lucide="circle-alert"></i>Use a link that starts with https://. Script and data links aren't allowed.</span>
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-url2">URL</label>
+              <input class="input input--mono" id="f-url2" value="https://github.com/northwind/atlas-mobile">
+              <span class="field-error" style="color:var(--color-attention-fg)"><i data-lucide="triangle-alert"></i>This link is already in Atlas Mobile App as “GitHub repository”. You can still add it.</span>
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-desc">Description <span class="opt">Optional</span></label>
+              <textarea class="textarea" id="f-desc" placeholder="Why does this link matter? Who should open it?"></textarea>
+              <span class="field-hint">Shown in search results and on the item card. Markdown isn't rendered here.</span>
+            </div>
+            <div class="ds-grid-2">
+              <div class="field">
+                <label class="field-label" for="f-dis">Workspace</label>
+                <input class="input" id="f-dis" value="Client Delivery" disabled>
+              </div>
+              <div class="field">
+                <label class="field-label" for="f-ro">Project ID</label>
+                <input class="input input--mono" id="f-ro" value="prj_01J9X4" readonly>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ds-stack">
+          <div class="ds-block">
+            <h3>Search, select, groups</h3>
+            <div class="ds-frame ds-stack">
+              <div class="input-wrap has-trail">
+                <i data-lucide="search"></i>
+                <input class="input" id="f-search" placeholder="Search titles, descriptions and tags" aria-label="Search knowledge">
+                <span class="trail"><span class="kbd">/</span></span>
+              </div>
+              <div class="field">
+                <label class="field-label" for="f-cat">Category</label>
+                <div class="select-wrap">
+                  <select class="select" id="f-cat"><option>Development</option><option>Design</option><option>Project management</option><option>QA and testing</option><option>Uncategorized</option></select>
+                  <i data-lucide="chevrons-up-down"></i>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="f-slug">Project address</label>
+                <div class="prefix-group">
+                  <span class="prefix">tavern.app/northwind/</span>
+                  <input class="input" id="f-slug" value="atlas-mobile">
+                </div>
+                <span class="field-success"><i data-lucide="check"></i>Available</span>
+              </div>
+              <div class="field">
+                <label class="field-label" for="f-tags">Tags</label>
+                <div class="tag-input">
+                  <span class="tag">design<button class="tag-x" type="button" aria-label="Remove tag design"><i data-lucide="x"></i></button></span>
+                  <span class="tag">mobile<button class="tag-x" type="button" aria-label="Remove tag mobile"><i data-lucide="x"></i></button></span>
+                  <input id="f-tags" placeholder="Add a tag">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ds-grid-3">
+        <div class="ds-block">
+          <h3>Checkbox</h3>
+          <div class="ds-frame ds-stack" style="gap:12px">
+            <label class="choice"><input type="checkbox" class="check" checked><span class="choice-text">Pin to project overview<small>Pinned items appear first for everyone who can view them.</small></span></label>
+            <label class="choice"><input type="checkbox" class="check" id="indet"><span class="choice-text">Select all on this page</span></label>
+            <label class="choice"><input type="checkbox" class="check"><span class="choice-text">Required step</span></label>
+            <label class="choice is-disabled"><input type="checkbox" class="check" checked disabled><span class="choice-text">Project Admin can view<small>Admins always have full access.</small></span></label>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Radio</h3>
+          <div class="ds-frame ds-stack" style="gap:12px" role="radiogroup" aria-label="Invitation uses">
+            <label class="choice"><input type="radio" class="radio" name="uses" checked><span class="choice-text">Single use<small>The link stops working after one person joins.</small></span></label>
+            <label class="choice"><input type="radio" class="radio" name="uses"><span class="choice-text">Up to 10 people</span></label>
+            <label class="choice is-disabled"><input type="radio" class="radio" name="uses" disabled><span class="choice-text">Unlimited<small>Not available on invitation links.</small></span></label>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Switch and segmented</h3>
+          <div class="ds-frame ds-stack" style="gap:0;padding-top:8px;padding-bottom:8px">
+            <div class="switch-row"><div><div class="t" id="sw1">Email me about expiring invitations</div><div class="d">Two days before a link expires.</div></div><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="sw1"></button></div>
+            <div class="switch-row"><div><div class="t" id="sw2">Show archived items</div><div class="d">Only you see this view.</div></div><button class="switch" type="button" role="switch" aria-checked="false" aria-labelledby="sw2"></button></div>
+            <div class="switch-row" style="align-items:center"><div class="t">View</div>
+              <div class="segmented" role="group" aria-label="View mode" data-exclusive>
+                <button type="button" aria-pressed="true"><i data-lucide="list"></i>List</button>
+                <button type="button" aria-pressed="false"><i data-lucide="layout-grid"></i>Grid</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ LABELS ═════════ -->
+    <section class="ds-section" id="labels">
+      <header>
+        <h2>Labels and avatars</h2>
+        <p>Labels state a fact about a thing. Tags are user-defined and clickable to filter. Chips are filters you toggle. Counters are numbers only.</p>
+      </header>
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Labels</h3>
+          <div class="ds-frame ds-stack">
+            <div class="ds-row" style="gap:8px">
+              <span class="label">Default</span>
+              <span class="label label--neutral">Neutral</span>
+              <span class="label label--accent">Accent</span>
+              <span class="label label--success">Success</span>
+              <span class="label label--attention">Attention</span>
+              <span class="label label--danger">Danger</span>
+              <span class="label label--done">Done</span>
+            </div>
+            <div class="ds-row" style="gap:12px">
+              <span class="status status--success">Clean</span>
+              <span class="status status--attention">Scanning</span>
+              <span class="status status--danger">Quarantined</span>
+              <span class="status status--accent">Invited</span>
+              <span class="status status--neutral">Suspended</span>
+            </div>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Roles</h3>
+          <p class="spec">One role per person per project. Tenant roles use the building icon.</p>
+          <div class="ds-frame ds-stack">
+            <div class="ds-row" style="gap:8px">
+              <span class="label label--solid"><i data-lucide="building-2"></i>Tenant Owner</span>
+              <span class="label label--neutral"><i data-lucide="building-2"></i>Tenant Admin</span>
+            </div>
+            <div class="ds-row" style="gap:8px">
+              <span class="label label--accent"><i data-lucide="shield-check"></i>Project Admin</span>
+              <span class="label label--teal">Maintainer</span>
+              <span class="label label--neutral">Member</span>
+              <span class="label"><i data-lucide="eye"></i>Viewer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Tags, chips, counters, keys</h3>
+          <div class="ds-frame ds-stack">
+            <div class="ds-row" style="gap:6px">
+              <a class="tag" href="#labels">frontend</a><a class="tag" href="#labels">api</a><a class="tag" href="#labels">onboarding</a><a class="tag" href="#labels">release</a>
+            </div>
+            <div class="ds-row" style="gap:8px" role="group" aria-label="Filter by type">
+              <button class="chip" type="button" aria-pressed="true"><i data-lucide="check" class="chip-check sm"></i>Links <span class="counter">24</span></button>
+              <button class="chip" type="button" aria-pressed="false"><i data-lucide="check" class="chip-check sm"></i>Files <span class="counter">9</span></button>
+              <button class="chip" type="button" aria-pressed="false"><i data-lucide="check" class="chip-check sm"></i>Documents <span class="counter">6</span></button>
+            </div>
+            <div class="ds-row" style="gap:12px">
+              <span class="counter">3</span><span class="counter counter--accent">12</span><span class="counter counter--danger">2</span>
+              <span class="ds-row" style="gap:4px"><span class="kbd">⌘</span><span class="kbd">K</span></span>
+              <span class="kbd">Esc</span>
+            </div>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Avatars</h3>
+          <p class="spec">Initials on a color picked from the person's ID, so it stays stable. Organizations use a rounded square.</p>
+          <div class="ds-frame ds-stack">
+            <div class="ds-row" style="align-items:flex-end">
+              <span class="avatar avatar--xs">PC</span>
+              <span class="avatar avatar--sm c2">AK</span>
+              <span class="avatar c3">SL</span>
+              <span class="avatar avatar--lg c4">NS</span>
+              <span class="avatar avatar--xl c5">DO</span>
+              <span class="avatar avatar--lg avatar--org c6">N</span>
+            </div>
+            <div class="ds-row" style="gap:24px">
+              <div class="avatar-stack" aria-label="12 members">
+                <span class="avatar avatar--sm">PC</span><span class="avatar avatar--sm c2">AK</span><span class="avatar avatar--sm c3">SL</span><span class="avatar avatar--sm c4">NS</span><span class="avatar avatar--sm more">+8</span>
+              </div>
+              <div class="person"><span class="avatar c2">AK</span><span class="who"><span class="name">Arthit Kittisak</span><span class="email">arthit@northwind.example</span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ NAVIGATION ═════════ -->
+    <section class="ds-section" id="navigation">
+      <header>
+        <h2>Navigation</h2>
+        <p>The same frame in every tenant and project: organization switcher and projects in the sidebar, search in the top bar, breadcrumbs and tabs in the page header. Tabs a role can't use are left out, not disabled.</p>
+      </header>
+      <div class="ds-block">
+        <h3>App shell</h3>
+        <p class="spec">Sidebar 232 · top bar 52 · page header with tabs. Below 860px the sidebar becomes a drawer behind the menu button.</p>
+        <div class="ds-frame flush">
+          <div class="shell">
+            <aside class="shell-side" aria-label="Sidebar example">
+              <div class="menu-anchor" style="display:block">
+                <button class="tenant-switch" type="button" data-menu-trigger aria-haspopup="menu" aria-expanded="false">
+                  <span class="avatar avatar--sm avatar--org c6">N</span>
+                  <span><span class="ts-name">Northwind Studio</span><span class="ts-plan">Tenant Admin</span></span>
+                  <i data-lucide="chevrons-up-down"></i>
+                </button>
+                <div class="menu" role="menu" hidden>
+                  <div class="menu-heading">Organizations</div>
+                  <button class="menu-item" role="menuitemradio" aria-checked="true"><span class="avatar avatar--xs avatar--org c6">N</span>Northwind Studio<i data-lucide="check" class="check-mark" style="margin-left:auto"></i></button>
+                  <button class="menu-item" role="menuitemradio" aria-checked="false"><span class="avatar avatar--xs avatar--org c5">K</span>Krungthep Logistics<i data-lucide="check" class="check-mark" style="margin-left:auto"></i></button>
+                  <div class="menu-sep"></div>
+                  <button class="menu-item" role="menuitem"><i data-lucide="plus"></i>Create organization</button>
+                </div>
+              </div>
+              <nav class="side-nav" aria-label="Main" style="margin-top:8px">
+                <a href="#navigation"><i data-lucide="house"></i>Home</a>
+                <a href="#navigation"><i data-lucide="search"></i>Search</a>
+                <a href="#navigation"><i data-lucide="folder"></i>Workspaces</a>
+                <a href="#navigation"><i data-lucide="mail"></i>Invitations<span class="counter">3</span></a>
+              </nav>
+              <div class="side-heading">Client Delivery <i data-lucide="plus" class="sm"></i></div>
+              <nav class="side-nav" aria-label="Projects">
+                <a href="#navigation" aria-current="page"><span class="proj-sq" style="background:var(--color-avatar-1)">A</span>Atlas Mobile App</a>
+                <a href="#navigation"><span class="proj-sq" style="background:var(--color-avatar-5)">B</span>Billing Revamp</a>
+                <a href="#navigation"><span class="proj-sq" style="background:var(--color-avatar-3)">C</span>Customer Portal</a>
+              </nav>
+              <div class="side-foot">
+                <nav class="side-nav" aria-label="Account">
+                  <a href="#navigation"><i data-lucide="settings"></i>Organization settings</a>
+                  <a href="#navigation"><i data-lucide="circle-help"></i>Help and feedback</a>
+                </nav>
+              </div>
+            </aside>
+            <div class="shell-main">
+              <div class="topbar">
+                <button class="btn btn--icon btn--subtle menu-btn" type="button" aria-label="Open navigation"><i data-lucide="menu"></i></button>
+                <button class="search-trigger" type="button" aria-label="Search Northwind Studio"><i data-lucide="search"></i><span class="st-text">Search Northwind Studio</span><span class="kbd">⌘K</span></button>
+                <span class="spacer"></span>
+                <span class="tt"><button class="btn btn--icon btn--subtle" type="button" aria-label="Notifications"><i data-lucide="bell"></i></button><span class="tt-bubble" role="tooltip">Notifications</span></span>
+                <div class="menu-anchor">
+                  <button class="btn btn--icon btn--subtle" type="button" data-menu-trigger aria-haspopup="menu" aria-expanded="false" aria-label="Account menu"><span class="avatar avatar--sm">PC</span></button>
+                  <div class="menu right" role="menu" hidden>
+                    <div style="padding:8px"><div class="person"><span class="avatar">PC</span><span class="who"><span class="name">Pim Chaiyaporn</span><span class="email">pim@northwind.example</span></span></div></div>
+                    <div class="menu-sep"></div>
+                    <button class="menu-item" role="menuitem"><i data-lucide="user"></i>Profile and account</button>
+                    <button class="menu-item" role="menuitem"><i data-lucide="monitor"></i>Sessions and devices</button>
+                    <div class="menu-sep"></div>
+                    <button class="menu-item" role="menuitem"><i data-lucide="log-out"></i>Sign out</button>
+                  </div>
+                </div>
+              </div>
+              <div class="page-head">
+                <nav class="breadcrumbs" aria-label="Breadcrumb">
+                  <a href="#navigation">Northwind Studio</a><i data-lucide="chevron-right"></i>
+                  <a href="#navigation">Client Delivery</a><i data-lucide="chevron-right"></i>
+                  <span aria-current="page">Atlas Mobile App</span>
+                </nav>
+                <div class="ph-row">
+                  <div>
+                    <h1>Atlas Mobile App</h1>
+                    <p class="lede">iOS and Android app for Atlas field staff. Contact: Pim Chaiyaporn.</p>
+                  </div>
+                  <div class="ph-actions">
+                    <button class="btn" type="button"><i data-lucide="user-plus"></i>Invite</button>
+                    <button class="btn btn--primary" type="button"><i data-lucide="plus"></i>Add knowledge</button>
+                  </div>
+                </div>
+                <div class="tabs" role="tablist" aria-label="Project sections" data-tabs>
+                  <button class="tab" role="tab" aria-selected="false" type="button"><i data-lucide="layout-dashboard"></i>Overview</button>
+                  <button class="tab" role="tab" aria-selected="true" type="button"><i data-lucide="book-open"></i>Knowledge <span class="counter">39</span></button>
+                  <button class="tab" role="tab" aria-selected="false" type="button"><i data-lucide="list-checks"></i>Onboarding</button>
+                  <button class="tab" role="tab" aria-selected="false" type="button"><i data-lucide="users"></i>Members <span class="counter">12</span></button>
+                  <button class="tab" role="tab" aria-selected="false" type="button"><i data-lucide="activity"></i>Activity</button>
+                  <button class="tab" role="tab" aria-selected="false" type="button"><i data-lucide="settings"></i>Settings</button>
+                </div>
+              </div>
+              <div class="shell-content">
+                <div class="toolbar">
+                  <div class="input-wrap grow"><i data-lucide="search"></i><input class="input" placeholder="Search in Atlas Mobile App" aria-label="Search in project"></div>
+                  <div class="select-wrap" style="width:auto"><select class="select" aria-label="Sort"><option>Last updated</option><option>Title A–Z</option><option>Date created</option></select><i data-lucide="chevrons-up-down"></i></div>
+                  <button class="btn" type="button"><i data-lucide="filter"></i>Filters <span class="count">2</span></button>
+                </div>
+                <div class="panel">
+                  <ul class="k-list">
+                    <li class="k-row">
+                      <span class="type-icon type-icon--link"><i data-lucide="link-2"></i></span>
+                      <div style="min-width:0"><div class="k-head"><a class="k-title" href="#navigation">Figma: Mobile app UI</a><span class="k-pin" title="Pinned"><i data-lucide="pin"></i></span></div><div class="k-meta"><span>Design</span><span>Updated 2 hours ago</span></div></div>
+                      <div class="k-actions"><button class="btn btn--icon btn--subtle btn--sm" type="button" aria-label="More actions"><i data-lucide="ellipsis"></i></button></div>
+                    </li>
+                    <li class="k-row">
+                      <span class="type-icon type-icon--doc"><i data-lucide="file-text"></i></span>
+                      <div style="min-width:0"><div class="k-head"><a class="k-title" href="#navigation">Release checklist</a></div><div class="k-meta"><span>QA and testing</span><span>Updated yesterday</span></div></div>
+                      <div class="k-actions"><button class="btn btn--icon btn--subtle btn--sm" type="button" aria-label="More actions"><i data-lucide="ellipsis"></i></button></div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Breadcrumbs and tabs</h3>
+          <div class="ds-frame ds-stack">
+            <nav class="breadcrumbs" aria-label="Breadcrumb example">
+              <a href="#navigation">Atlas Mobile App</a><i data-lucide="chevron-right"></i>
+              <a href="#navigation">Knowledge</a><i data-lucide="chevron-right"></i>
+              <span aria-current="page">API reference (staging)</span>
+            </nav>
+            <div class="tabs" role="tablist" aria-label="Settings sections" data-tabs>
+              <button class="tab" role="tab" aria-selected="true" type="button">General</button>
+              <button class="tab" role="tab" aria-selected="false" type="button">Categories</button>
+              <button class="tab" role="tab" aria-selected="false" type="button">Danger zone</button>
+            </div>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Pagination</h3>
+          <p class="spec">Lists use cursors: Previous and Next, or Load more. Numbered pages only in the audit log.</p>
+          <div class="ds-frame ds-stack">
+            <div class="pagination">
+              <span>Showing 20 items</span>
+              <div class="ds-row" style="gap:8px"><button class="btn btn--sm" type="button" disabled><i data-lucide="chevron-left"></i>Previous</button><button class="btn btn--sm" type="button">Next<i data-lucide="chevron-right"></i></button></div>
+            </div>
+            <div class="pagination">
+              <span class="num">Page 2 of 14</span>
+              <div class="pages">
+                <button class="page-btn" type="button" aria-label="Previous page"><i data-lucide="chevron-left"></i></button>
+                <button class="page-btn" type="button">1</button><button class="page-btn" type="button" aria-current="page">2</button><button class="page-btn" type="button">3</button>
+                <span class="page-btn" aria-hidden="true">…</span><button class="page-btn" type="button">14</button>
+                <button class="page-btn" type="button" aria-label="Next page"><i data-lucide="chevron-right"></i></button>
+              </div>
+            </div>
+            <button class="btn btn--block" type="button">Load 20 more</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ KNOWLEDGE ═════════ -->
+    <section class="ds-section" id="knowledge">
+      <header>
+        <h2>Knowledge items</h2>
+        <p>Every item shows its type, title, category, tags, owner and freshness. Pinned items carry the pin. Restricted items show who can see them, but only to people allowed to see the rule. Actions appear only when the viewer's role allows them.</p>
+      </header>
+      <div class="ds-block">
+        <h3>List row</h3>
+        <p class="spec">Default view. Type icon 32 · title 14 semibold · description clamps at 2 lines · metadata 13 subtle</p>
+        <div class="panel">
+          <div class="panel-head">
+            <h4><i data-lucide="pin" class="sm" style="color:var(--color-accent-fg)"></i>Pinned</h4>
+            <div class="ph-right"><span class="ds-caption num">3 items</span></div>
+          </div>
+          <ul class="k-list">
+            <li class="k-row">
+              <span class="type-icon type-icon--link"><i data-lucide="link-2"></i></span>
+              <div style="min-width:0">
+                <div class="k-head"><a class="k-title" href="#knowledge">Figma: Mobile app UI</a><span class="k-pin" title="Pinned"><i data-lucide="pin"></i></span></div>
+                <p class="k-desc">Source of truth for every screen. Comment in Figma, not in chat. The “Ready for dev” page is the only one engineers should build from.</p>
+                <div class="k-url">figma.com/design/Atlas-Mobile-UI</div>
+                <div class="k-meta">
+                  <span>Design</span>
+                  <span class="ds-row" style="gap:4px"><a class="tag" href="#knowledge">design</a><a class="tag" href="#knowledge">mobile</a></span>
+                  <span><span class="avatar avatar--xs">PC</span>Pim Chaiyaporn</span>
+                  <span title="14 Oct 2026, 09:12"><i data-lucide="clock"></i>Updated 2 hours ago</span>
+                </div>
+              </div>
+              <div class="k-actions">
+                <button class="btn btn--sm" type="button">Open<i data-lucide="external-link" class="sm"></i></button>
+                <div class="menu-anchor">
+                  <button class="btn btn--icon btn--subtle btn--sm" type="button" data-menu-trigger aria-haspopup="menu" aria-expanded="false" aria-label="More actions for Figma: Mobile app UI"><i data-lucide="ellipsis"></i></button>
+                  <div class="menu right" role="menu" hidden>
+                    <button class="menu-item" role="menuitem"><i data-lucide="pencil"></i>Edit</button>
+                    <button class="menu-item" role="menuitem"><i data-lucide="pin-off"></i>Unpin</button>
+                    <button class="menu-item" role="menuitem"><i data-lucide="copy"></i>Copy link</button>
+                    <button class="menu-item" role="menuitem"><i data-lucide="lock"></i>Change who can see this</button>
+                    <div class="menu-sep"></div>
+                    <button class="menu-item" role="menuitem" data-toast="Archived “Figma: Mobile app UI”" data-toast-action="Undo"><i data-lucide="archive"></i>Archive</button>
+                  </div>
+                </div>
+              </div>
+            </li>
+            <li class="k-row">
+              <span class="type-icon type-icon--file"><i data-lucide="paperclip"></i></span>
+              <div style="min-width:0">
+                <div class="k-head"><a class="k-title" href="#knowledge">Statement of work v3 (signed)</a><span class="k-pin" title="Pinned"><i data-lucide="pin"></i></span><span class="label label--attention"><i data-lucide="lock"></i>Admins, Maintainers</span></div>
+                <p class="k-desc">Signed scope, milestones and payment schedule. Check here before agreeing to new work.</p>
+                <div class="k-meta">
+                  <span>Project management</span>
+                  <span>PDF · 1.8 MB</span>
+                  <span><span class="avatar avatar--xs c4">NS</span>Nattapong Srisuk</span>
+                  <span><i data-lucide="clock"></i>Updated 3 weeks ago</span>
+                </div>
+              </div>
+              <div class="k-actions">
+                <button class="btn btn--sm" type="button"><i data-lucide="download" class="sm"></i>Download</button>
+                <button class="btn btn--icon btn--subtle btn--sm" type="button" aria-label="More actions"><i data-lucide="ellipsis"></i></button>
+              </div>
+            </li>
+            <li class="k-row is-selected">
+              <span class="type-icon type-icon--doc"><i data-lucide="file-text"></i></span>
+              <div style="min-width:0">
+                <div class="k-head"><a class="k-title" href="#knowledge">How we release to the App Store</a><span class="k-pin" title="Pinned"><i data-lucide="pin"></i></span></div>
+                <p class="k-desc">Step-by-step release runbook, including TestFlight groups and who approves the build.</p>
+                <div class="k-meta">
+                  <span>Development</span>
+                  <span class="ds-row" style="gap:4px"><a class="tag" href="#knowledge">release</a></span>
+                  <span><span class="avatar avatar--xs c2">AK</span>Arthit Kittisak</span>
+                  <span><i data-lucide="clock"></i>Updated yesterday</span>
+                </div>
+              </div>
+              <div class="k-actions">
+                <button class="btn btn--sm" type="button"><i data-lucide="pencil" class="sm"></i>Edit</button>
+                <button class="btn btn--icon btn--subtle btn--sm" type="button" aria-label="More actions"><i data-lucide="ellipsis"></i></button>
+              </div>
+            </li>
+          </ul>
+          <div class="panel-foot"><span class="inline-note"><i data-lucide="eye"></i>Viewers see the same list without Edit, Pin or Archive.</span></div>
+        </div>
+      </div>
+
+      <div class="ds-block">
+        <h3>Grid card</h3>
+        <p class="spec">Same data as the row, for scanning by type. Equal heights per row, footer pinned to the bottom.</p>
+        <div class="k-cards">
+          <article class="k-card">
+            <div class="kc-top"><span class="type-icon type-icon--link"><i data-lucide="link-2"></i></span><span class="kc-cat">Development</span><div class="k-actions"><button class="btn btn--icon btn--subtle btn--sm" type="button" aria-label="Pin API reference"><i data-lucide="pin"></i></button></div></div>
+            <a class="k-title" href="#knowledge">API reference (staging)</a>
+            <p class="k-desc">Swagger docs for every endpoint the mobile app calls. Staging only; production keys live in the vault.</p>
+            <div class="kc-tags"><a class="tag" href="#knowledge">api</a><a class="tag" href="#knowledge">backend</a></div>
+            <div class="kc-foot"><span class="avatar avatar--xs c3">SL</span>Sarah Lee · 5 days ago</div>
+          </article>
+          <article class="k-card">
+            <div class="kc-top"><span class="type-icon type-icon--file"><i data-lucide="paperclip"></i></span><span class="kc-cat">QA and testing</span><div class="k-actions"><button class="btn btn--icon btn--subtle btn--sm" type="button" aria-label="Pin test plan"><i data-lucide="pin"></i></button></div></div>
+            <a class="k-title" href="#knowledge">Regression test plan Q4.xlsx</a>
+            <p class="k-desc">Device matrix and the 140 cases we run before every release.</p>
+            <div class="kc-tags"><a class="tag" href="#knowledge">qa</a></div>
+            <div class="kc-foot"><span class="avatar avatar--xs c5">DO</span>Daniel Ortiz · 1 month ago</div>
+          </article>
+          <article class="k-card">
+            <div class="kc-top"><span class="type-icon type-icon--doc"><i data-lucide="file-text"></i></span><span class="kc-cat">Project management</span><div class="k-actions"><span class="k-pin" title="Pinned"><i data-lucide="pin"></i></span></div></div>
+            <a class="k-title" href="#knowledge">Who to ask about what</a>
+            <p class="k-desc">Owners for design, backend, QA, client contact and environments, with Slack handles.</p>
+            <div class="kc-tags"><a class="tag" href="#knowledge">onboarding</a><a class="tag" href="#knowledge">people</a></div>
+            <div class="kc-foot"><span class="avatar avatar--xs">PC</span>Pim Chaiyaporn · today<span class="lock" title="Visible to Admins and Maintainers"><i data-lucide="lock" class="sm"></i></span></div>
+          </article>
+        </div>
+      </div>
+
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Item details</h3>
+          <div class="panel" style="padding:4px 20px">
+            <dl class="dl">
+              <dt>Type</dt><dd><span class="type-icon type-icon--sm type-icon--link"><i data-lucide="link-2"></i></span>External link</dd>
+              <dt>URL</dt><dd><a class="mono" style="font-size:13px;overflow-wrap:anywhere" href="#knowledge">https://staging-api.atlas.example/docs</a></dd>
+              <dt>Category</dt><dd>Development</dd>
+              <dt>Tags</dt><dd><a class="tag" href="#knowledge">api</a><a class="tag" href="#knowledge">backend</a></dd>
+              <dt>Owner</dt><dd><span class="avatar avatar--xs c3">SL</span>Sarah Lee</dd>
+              <dt>Last updated</dt><dd class="num">14 Oct 2026, 09:12 by Arthit Kittisak</dd>
+              <dt>Who can see</dt><dd>Everyone in the project</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Project card</h3>
+          <article class="proj-card">
+            <div class="pc-top"><span class="avatar avatar--lg avatar--org">A</span><div><a class="pc-name" href="#knowledge">Atlas Mobile App</a><div class="pc-ws">Client Delivery</div></div><span class="label label--accent" style="margin-left:auto">Project Admin</span></div>
+            <p class="pc-desc">iOS and Android app for Atlas field staff.</p>
+            <div class="pc-stats"><span><i data-lucide="book-open" class="sm"></i><span class="num">39</span> items</span><span><i data-lucide="users" class="sm"></i><span class="num">12</span> members</span><span><i data-lucide="clock" class="sm"></i>Updated today</span></div>
+            <div class="pc-foot">
+              <div class="avatar-stack"><span class="avatar avatar--xs">PC</span><span class="avatar avatar--xs c2">AK</span><span class="avatar avatar--xs c3">SL</span><span class="avatar avatar--xs more">+9</span></div>
+              <span class="ds-caption" style="margin-left:auto">Onboarding <span class="num">5/7</span></span>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="ds-block">
+        <h3>Activity feed</h3>
+        <p class="spec">Only lists changes to items the viewer can see. Hidden items never appear, not even as “someone changed something”.</p>
+        <div class="panel">
+          <ul class="feed">
+            <li><span class="avatar avatar--sm c2">AK</span><p class="f-text"><b>Arthit Kittisak</b> edited <a href="#knowledge">How we release to the App Store</a></p><span class="f-when">2 hours ago</span></li>
+            <li><span class="avatar avatar--sm">PC</span><p class="f-text"><b>Pim Chaiyaporn</b> pinned <a href="#knowledge">Figma: Mobile app UI</a></p><span class="f-when">Yesterday</span></li>
+            <li><span class="avatar avatar--sm c3">SL</span><p class="f-text"><b>Sarah Lee</b> added a link to <b>Development</b>: <a href="#knowledge">API reference (staging)</a></p><span class="f-when">5 days ago</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ FILES ═════════ -->
+    <section class="ds-section" id="files">
+      <header>
+        <h2>Files and upload</h2>
+        <p>Files can be downloaded only after a clean malware scan. Every state says what is happening and what the person can do next.</p>
+      </header>
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Drop zone</h3>
+          <div class="dropzone" tabindex="0" role="button" aria-label="Upload a file" id="dropzone">
+            <span class="dz-icon"><i data-lucide="upload"></i></span>
+            <span class="dz-title">Drop a file here or <span style="color:var(--color-accent-fg)">browse</span></span>
+            <span class="dz-sub">PDF, Office, images or text, up to 25 MB. Files are scanned before anyone can download them.</span>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Upload and scan states</h3>
+          <div class="panel">
+            <div class="file-row">
+              <span class="type-icon type-icon--file"><i data-lucide="paperclip"></i></span>
+              <div style="min-width:0"><div class="f-name">Atlas_brand_guidelines.pdf</div><div class="f-sub"><span class="num">6.2 of 9.7 MB</span><span>Uploading</span></div><div class="progress progress--sm"><span style="width:64%"></span></div></div>
+              <button class="btn btn--sm btn--subtle" type="button">Cancel</button>
+            </div>
+            <div class="file-row">
+              <span class="type-icon type-icon--file"><i data-lucide="paperclip"></i></span>
+              <div style="min-width:0"><div class="f-name">Field_survey_results.xlsx</div><div class="f-sub"><span class="label label--attention"><span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>Scanning</span><span>Download opens when the scan finishes.</span></div></div>
+              <button class="btn btn--sm" type="button" disabled><i data-lucide="download" class="sm"></i>Download</button>
+            </div>
+            <div class="file-row">
+              <span class="type-icon type-icon--file"><i data-lucide="paperclip"></i></span>
+              <div style="min-width:0"><div class="f-name">Statement_of_work_v3.pdf</div><div class="f-sub"><span class="label label--success"><i data-lucide="shield-check"></i>Clean</span><span class="num">1.8 MB</span></div></div>
+              <button class="btn btn--sm" type="button"><i data-lucide="download" class="sm"></i>Download</button>
+            </div>
+            <div class="file-row">
+              <span class="type-icon type-icon--file"><i data-lucide="paperclip"></i></span>
+              <div style="min-width:0"><div class="f-name">invoice_tool.zip</div><div class="f-sub"><span class="label label--danger"><i data-lucide="shield-alert"></i>Quarantined</span><span>A threat was found. Nobody can download this file.</span></div></div>
+              <button class="btn btn--sm btn--danger" type="button">Delete file</button>
+            </div>
+          </div>
+          <div class="alert alert--danger" role="alert">
+            <i data-lucide="circle-x"></i>
+            <div class="alert-body"><span class="alert-title">setup.exe wasn't uploaded</span><span class="alert-text">Program files (.exe, .bat, .sh) can't be stored in Tavern. Upload a PDF or zip the documentation instead.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ TABLES ═════════ -->
+    <section class="ds-section" id="tables">
+      <header>
+        <h2>Tables</h2>
+        <p>For people, invitations and the audit log. Headers in sentence case, numbers and dates in tabular figures, row actions on the right. On narrow screens the table scrolls inside its panel.</p>
+      </header>
+      <div class="ds-block">
+        <h3>Members</h3>
+        <div class="panel">
+          <div class="panel-head">
+            <h4>Members <span class="counter">12</span></h4>
+            <div class="ph-right"><div class="input-wrap" style="width:220px"><i data-lucide="search"></i><input class="input input--sm" placeholder="Filter by name or email" aria-label="Filter members"></div><button class="btn btn--sm btn--primary" type="button" data-open="invite-dialog"><i data-lucide="user-plus"></i>Invite</button></div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th><button type="button">Member<i data-lucide="arrow-up-down" class="sm"></i></button></th><th>Role</th><th>Status</th><th><button type="button">Joined<i data-lucide="arrow-down" class="sm"></i></button></th><th class="t-right"><span class="sr-only">Actions</span></th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><div class="person"><span class="avatar">PC</span><span class="who"><span class="name">Pim Chaiyaporn <span class="ds-caption" style="font-weight:400">(you)</span></span><span class="email">pim@northwind.example</span></span></div></td>
+                  <td><div class="select-wrap"><select class="select input--sm" aria-label="Role for Pim Chaiyaporn" disabled title="Assign another Project Admin before changing your role"><option>Project Admin</option></select><i data-lucide="chevrons-up-down"></i></div></td>
+                  <td><span class="status status--success">Active</span></td>
+                  <td class="t-muted num">3 Mar 2026</td>
+                  <td class="t-right"></td>
+                </tr>
+                <tr>
+                  <td><div class="person"><span class="avatar c2">AK</span><span class="who"><span class="name">Arthit Kittisak</span><span class="email">arthit@northwind.example</span></span></div></td>
+                  <td><div class="select-wrap"><select class="select input--sm" aria-label="Role for Arthit Kittisak"><option>Project Admin</option><option selected>Maintainer</option><option>Member</option><option>Viewer</option></select><i data-lucide="chevrons-up-down"></i></div></td>
+                  <td><span class="status status--success">Active</span></td>
+                  <td class="t-muted num">12 Apr 2026</td>
+                  <td class="t-right"><div class="menu-anchor"><button class="btn btn--icon btn--subtle btn--sm" type="button" data-menu-trigger aria-haspopup="menu" aria-expanded="false" aria-label="Actions for Arthit Kittisak"><i data-lucide="ellipsis"></i></button><div class="menu right" role="menu" hidden><button class="menu-item" role="menuitem"><i data-lucide="history"></i>View activity</button><div class="menu-sep"></div><button class="menu-item danger" role="menuitem" data-open="confirm-dialog"><i data-lucide="user-minus"></i>Remove from project</button></div></div></td>
+                </tr>
+                <tr>
+                  <td><div class="person"><span class="avatar c3">SL</span><span class="who"><span class="name">Sarah Lee</span><span class="email">sarah.lee@atlas-client.example</span></span></div></td>
+                  <td><div class="select-wrap"><select class="select input--sm" aria-label="Role for Sarah Lee"><option>Project Admin</option><option>Maintainer</option><option selected>Member</option><option>Viewer</option></select><i data-lucide="chevrons-up-down"></i></div></td>
+                  <td><span class="status status--success">Active</span></td>
+                  <td class="t-muted num">2 Jun 2026</td>
+                  <td class="t-right"><button class="btn btn--icon btn--subtle btn--sm" type="button" aria-label="Actions for Sarah Lee"><i data-lucide="ellipsis"></i></button></td>
+                </tr>
+                <tr>
+                  <td><div class="person"><span class="avatar c5" style="background:var(--color-surface-sunken);color:var(--color-fg-muted)"><i data-lucide="mail" class="sm"></i></span><span class="who"><span class="name">daniel.ortiz@northwind.example</span><span class="email">Invited by Pim Chaiyaporn</span></span></div></td>
+                  <td><span class="label label--neutral">Viewer</span></td>
+                  <td><span class="status status--attention">Invitation pending</span></td>
+                  <td class="t-muted">Expires in 6 days</td>
+                  <td class="t-right"><button class="btn btn--sm btn--danger" type="button">Revoke</button></td>
+                </tr>
+                <tr>
+                  <td><div class="person"><span class="avatar c6">NS</span><span class="who"><span class="name">Nattapong Srisuk</span><span class="email">nattapong@northwind.example</span></span></div></td>
+                  <td><span class="label label--neutral">Member</span></td>
+                  <td><span class="status status--neutral">Suspended in organization</span></td>
+                  <td class="t-muted num">8 Jan 2026</td>
+                  <td class="t-right"><button class="btn btn--icon btn--subtle btn--sm" type="button" aria-label="Actions for Nattapong Srisuk"><i data-lucide="ellipsis"></i></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="ds-block">
+        <h3>Audit log</h3>
+        <p class="spec">Never shows passwords, tokens, signed URLs or document content. Denied attempts are recorded too.</p>
+        <div class="panel">
+          <div class="panel-head">
+            <div class="ds-row" style="gap:8px">
+              <div class="select-wrap"><select class="select input--sm" aria-label="Date range"><option>Last 7 days</option><option>Last 30 days</option><option>Custom range</option></select><i data-lucide="chevrons-up-down"></i></div>
+              <div class="select-wrap"><select class="select input--sm" aria-label="Action"><option>All actions</option><option>Membership</option><option>Knowledge</option><option>Invitations</option></select><i data-lucide="chevrons-up-down"></i></div>
+            </div>
+            <div class="ph-right"><button class="btn btn--sm" type="button"><i data-lucide="download" class="sm"></i>Export CSV</button></div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>Outcome</th></tr></thead>
+              <tbody>
+                <tr><td class="t-muted num">14 Oct, 10:42</td><td><div class="person"><span class="avatar avatar--xs">PC</span>Pim Chaiyaporn</div></td><td>Changed role <span class="t-muted">Member → Maintainer</span></td><td>Arthit Kittisak</td><td><span class="label label--success">Success</span></td></tr>
+                <tr><td class="t-muted num">14 Oct, 10:15</td><td><div class="person"><span class="avatar avatar--xs c3">SL</span>Sarah Lee</div></td><td>Edit item</td><td>Statement of work v3</td><td><span class="label label--danger">Denied</span></td></tr>
+                <tr><td class="t-muted num">14 Oct, 09:58</td><td><div class="person"><span class="avatar avatar--xs" style="background:var(--color-surface-sunken);color:var(--color-fg-muted)"><i data-lucide="cpu" class="sm"></i></span>System</div></td><td>File scan</td><td>invoice_tool.zip</td><td><span class="label label--danger">Quarantined</span></td></tr>
+                <tr><td class="t-muted num">13 Oct, 17:30</td><td><div class="person"><span class="avatar avatar--xs">PC</span>Pim Chaiyaporn</div></td><td>Created invitation <span class="t-muted">Viewer, 7 days</span></td><td>Atlas Mobile App</td><td><span class="label label--success">Success</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ ONBOARDING ═════════ -->
+    <section class="ds-section" id="onboarding">
+      <header>
+        <h2>Onboarding</h2>
+        <p>A checklist per role. Progress is saved per person, and a step that links to an item the person can't see shows only its instructions.</p>
+      </header>
+      <div class="panel" id="checklist">
+        <div class="ob-head">
+          <div><div class="ob-count"><span id="ob-done" class="num">2</span> of <span id="ob-total" class="num">5</span> steps complete</div><div class="ob-sub">Developer onboarding · Atlas Mobile App</div></div>
+          <div class="progress progress--success" aria-hidden="true"><span id="ob-bar" style="width:40%"></span></div>
+        </div>
+        <div class="step is-done">
+          <button class="step-toggle" type="button" role="checkbox" aria-checked="true" aria-label="Mark “Read who to ask about what” as complete"><i data-lucide="check"></i></button>
+          <div><div class="s-title"><span>Read who to ask about what</span><span class="label label--neutral">Required</span></div><p class="s-text">Know the owner for each area before you message the client.</p></div>
+          <span class="s-when">Done 12 Oct</span>
+        </div>
+        <div class="step is-done">
+          <button class="step-toggle" type="button" role="checkbox" aria-checked="true" aria-label="Mark “Get repository access” as complete"><i data-lucide="check"></i></button>
+          <div><div class="s-title"><span>Get repository access</span><span class="label label--neutral">Required</span></div><p class="s-text">Ask Arthit to add you to the GitHub team. Tavern doesn't grant access in other tools.</p><a class="s-link" href="#onboarding"><span class="type-icon type-icon--sm type-icon--link"><i data-lucide="link-2"></i></span>GitHub repository</a></div>
+          <span class="s-when">Done 13 Oct</span>
+        </div>
+        <div class="step">
+          <button class="step-toggle" type="button" role="checkbox" aria-checked="false" aria-label="Mark “Set up the staging environment” as complete"><i data-lucide="check"></i></button>
+          <div><div class="s-title"><span>Set up the staging environment</span><span class="label label--neutral">Required</span></div><p class="s-text">Follow the runbook, then sign in to the staging app with your test account.</p><a class="s-link" href="#onboarding"><span class="type-icon type-icon--sm type-icon--doc"><i data-lucide="file-text"></i></span>Staging setup runbook</a></div>
+          <span class="s-when"></span>
+        </div>
+        <div class="step">
+          <button class="step-toggle" type="button" role="checkbox" aria-checked="false" aria-label="Mark “Review the Figma ready-for-dev page” as complete"><i data-lucide="check"></i></button>
+          <div><div class="s-title"><span>Review the Figma ready-for-dev page</span></div><p class="s-text">Skim the components page so naming matches the code.</p><a class="s-link" href="#onboarding"><span class="type-icon type-icon--sm type-icon--link"><i data-lucide="link-2"></i></span>Figma: Mobile app UI</a></div>
+          <span class="s-when"></span>
+        </div>
+        <div class="step">
+          <button class="step-toggle" type="button" role="checkbox" aria-checked="false" aria-label="Mark “Introduce yourself in the team channel” as complete"><i data-lucide="check"></i></button>
+          <div><div class="s-title"><span>Introduce yourself in the team channel</span></div><p class="s-text">Say which part of the app you're starting on.</p></div>
+          <span class="s-when"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ ACCESS ═════════ -->
+    <section class="ds-section" id="access">
+      <header>
+        <h2>Invitations and access</h2>
+        <p>Invitation links are shown once, expire, and can be revoked. Access rules can only narrow what a role already allows, and the interface makes that limit visible.</p>
+      </header>
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Invitation link</h3>
+          <div class="panel invite-card">
+            <div class="ic-top"><span class="label label--success">Active</span><span class="label label--neutral">Viewer</span><span class="ds-caption" style="margin-left:auto">Created by Pim Chaiyaporn</span></div>
+            <div class="input-group">
+              <input class="input input--mono" id="invite-url" readonly value="https://tavern.app/invite/7Kq2mVnR4xT8pLwZ3hX9a" aria-label="Invitation link">
+              <button class="btn" type="button" data-copy="#invite-url"><i data-lucide="copy"></i>Copy</button>
+            </div>
+            <div class="ic-meta"><span><i data-lucide="calendar"></i>Expires 21 Oct 2026</span><span><i data-lucide="users"></i><span class="num">0 of 1</span> uses</span><span><i data-lucide="at-sign"></i>Only @northwind.example</span></div>
+            <div class="alert alert--info"><i data-lucide="info"></i><div class="alert-body"><span class="alert-text">Copy the link now. For security, Tavern can't show it again after you close this.</span></div></div>
+            <div class="ds-row"><button class="btn btn--sm btn--danger" type="button" data-toast="Invitation revoked. The link no longer works." data-tone="success">Revoke link</button></div>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Who can see and change this item</h3>
+          <div class="panel">
+            <div class="table-wrap">
+              <table class="matrix">
+                <thead><tr><th>Role</th><th>View</th><th>Edit</th><th>Archive</th></tr></thead>
+                <tbody>
+                  <tr><td><span class="rname">Project Admin</span><span class="rdesc">Always full access</span></td><td><input type="checkbox" class="check" checked disabled aria-label="Project Admin can view"></td><td><input type="checkbox" class="check" checked disabled aria-label="Project Admin can edit"></td><td><input type="checkbox" class="check" checked disabled aria-label="Project Admin can archive"></td></tr>
+                  <tr><td><span class="rname">Maintainer</span></td><td><input type="checkbox" class="check" checked aria-label="Maintainer can view"></td><td><input type="checkbox" class="check" checked aria-label="Maintainer can edit"></td><td><input type="checkbox" class="check" aria-label="Maintainer can archive"></td></tr>
+                  <tr><td><span class="rname">Member</span></td><td><input type="checkbox" class="check" checked aria-label="Member can view"></td><td><input type="checkbox" class="check" aria-label="Member can edit"></td><td><span class="tt"><input type="checkbox" class="check" disabled aria-label="Member can't archive: not allowed for this role"><span class="tt-bubble" role="tooltip">Members can't archive items</span></span></td></tr>
+                  <tr><td><span class="rname">Viewer</span></td><td><input type="checkbox" class="check" aria-label="Viewer can view"></td><td><span class="tt"><input type="checkbox" class="check" disabled aria-label="Viewer can't edit: read-only role"><span class="tt-bubble" role="tooltip">Viewers are read-only</span></span></td><td><input type="checkbox" class="check" disabled aria-label="Viewer can't archive: read-only role"></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="panel-foot"><span class="inline-note"><i data-lucide="info"></i>Rules can only remove access a role already has. Roles without View won't find this item in search, lists or activity.</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ FEEDBACK ═════════ -->
+    <section class="ds-section" id="feedback">
+      <header>
+        <h2>Feedback</h2>
+        <p>Alerts for things on the page that need attention, toasts to confirm what just happened, empty states that offer the next action the viewer is allowed to take.</p>
+      </header>
+      <div class="ds-block">
+        <h3>Alerts</h3>
+        <div class="ds-grid-2">
+          <div class="alert alert--info"><i data-lucide="info"></i><div class="alert-body"><span class="alert-title">You're viewing as a Viewer</span><span class="alert-text">You can read everything shared with your role. Ask a Project Admin if you need to add or edit items.</span></div></div>
+          <div class="alert alert--success"><i data-lucide="circle-check"></i><div class="alert-body"><span class="alert-title">You joined Atlas Mobile App</span><span class="alert-text">Start with the 5-step onboarding checklist.</span><div class="alert-actions"><button class="btn btn--sm" type="button">Open checklist</button></div></div></div>
+          <div class="alert alert--attention"><i data-lucide="triangle-alert"></i><div class="alert-body"><span class="alert-title">2 invitations expire tomorrow</span><span class="alert-text">daniel.ortiz@… and the QA team link stop working on 15 Oct.</span><div class="alert-actions"><button class="btn btn--sm" type="button">Review invitations</button></div></div></div>
+          <div class="alert alert--danger"><i data-lucide="circle-x"></i><div class="alert-body"><span class="alert-title">Someone else changed this item</span><span class="alert-text">Arthit saved a newer version while you were editing. Copy your changes, then reload to see theirs.</span><div class="alert-actions"><button class="btn btn--sm" type="button">Reload item</button></div></div></div>
+        </div>
+      </div>
+      <div class="ds-block">
+        <h3>Page banner</h3>
+        <div class="ds-frame flush">
+          <div class="banner banner--attention" style="border-bottom:0"><i data-lucide="archive"></i><span>This project is archived. Everything is read-only until a Project Admin restores it.</span><span class="spacer"></span><button class="btn btn--sm" type="button">Restore project</button></div>
+        </div>
+      </div>
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Toasts</h3>
+          <p class="spec">Bottom right, 5 seconds, longer when there's an action. Errors stay until dismissed.</p>
+          <div class="ds-frame ds-stack" style="align-items:flex-start">
+            <div class="toast static toast--success"><i data-lucide="circle-check" class="t-icon"></i><span class="t-text">Archived “Release checklist”</span><button class="t-action" type="button">Undo</button><button class="t-close" type="button" aria-label="Dismiss"><i data-lucide="x"></i></button></div>
+            <div class="toast static toast--danger"><i data-lucide="circle-x" class="t-icon"></i><span class="t-text">Couldn't save. Check your connection and try again.</span><button class="t-close" type="button" aria-label="Dismiss"><i data-lucide="x"></i></button></div>
+            <div class="ds-row"><button class="btn btn--sm" type="button" data-toast="Link copied" data-tone="success">Show a toast</button><button class="btn btn--sm" type="button" data-toast="Couldn't save. Check your connection and try again." data-tone="danger">Show an error</button></div>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Loading</h3>
+          <div class="ds-frame ds-stack">
+            <div class="ds-row" style="gap:20px"><span class="spinner spinner--accent" role="status" aria-label="Loading"></span><span class="spinner spinner--lg spinner--accent" role="status" aria-label="Loading"></span><span class="inline-note"><span class="spinner" style="width:14px;height:14px"></span>Checking invitation…</span></div>
+            <div class="ds-stack" style="gap:14px" aria-hidden="true">
+              <div class="ds-row" style="gap:14px;flex-wrap:nowrap"><div class="skeleton" style="width:32px;height:32px;border-radius:6px;flex:none"></div><div class="ds-stack" style="gap:8px;flex:1"><div class="skeleton" style="height:12px;width:55%"></div><div class="skeleton" style="height:10px;width:85%"></div></div></div>
+              <div class="ds-row" style="gap:14px;flex-wrap:nowrap"><div class="skeleton" style="width:32px;height:32px;border-radius:6px;flex:none"></div><div class="ds-stack" style="gap:8px;flex:1"><div class="skeleton" style="height:12px;width:40%"></div><div class="skeleton" style="height:10px;width:70%"></div></div></div>
+            </div>
+            <div class="ds-stack" style="gap:6px"><div class="ds-row" style="justify-content:space-between"><span class="ds-caption">Storage used</span><span class="ds-caption num">3.1 of 10 GB</span></div><div class="progress"><span style="width:31%"></span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ds-block">
+        <h3>Empty states</h3>
+        <div class="ds-grid-3">
+          <div class="panel"><div class="empty"><span class="e-icon"><i data-lucide="book-open"></i></span><h4>No knowledge yet</h4><p>Add the links and files new members ask about first: designs, repositories, environments.</p><div class="e-actions"><button class="btn btn--primary" type="button"><i data-lucide="plus"></i>Add knowledge</button></div></div></div>
+          <div class="panel"><div class="empty"><span class="e-icon"><i data-lucide="search-x"></i></span><h4>No results for “invoice”</h4><p>Try fewer words, or search all projects in Northwind Studio.</p><div class="e-actions"><button class="btn" type="button">Clear filters</button></div></div></div>
+          <div class="panel"><div class="empty"><span class="e-icon"><i data-lucide="compass"></i></span><h4>This page isn't available</h4><p>It may have moved, or you may not have access. Ask a Project Admin if you think you should.</p><div class="e-actions"><button class="btn" type="button">Go to your projects</button></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ OVERLAYS ═════════ -->
+    <section class="ds-section" id="overlays">
+      <header>
+        <h2>Overlays</h2>
+        <p>Dialogs for focused tasks and for confirming destructive actions. Menus for row and item actions. The command palette searches everything the viewer can see.</p>
+      </header>
+      <div class="ds-grid-2">
+        <div class="ds-block">
+          <h3>Dialog</h3>
+          <p class="spec">Width 520 (640 wide) · radius 12 · Esc and backdrop close · focus returns to the trigger</p>
+          <div class="ds-frame canvas ds-row">
+            <button class="btn btn--primary" type="button" data-open="invite-dialog"><i data-lucide="user-plus"></i>Open invite dialog</button>
+            <button class="btn btn--danger" type="button" data-open="confirm-dialog">Open confirm dialog</button>
+          </div>
+        </div>
+        <div class="ds-block">
+          <h3>Menu</h3>
+          <div class="ds-frame canvas">
+            <div class="menu static" role="menu" aria-label="Item actions example" style="max-width:280px">
+              <button class="menu-item" role="menuitem"><i data-lucide="pencil"></i>Edit<span class="hint">E</span></button>
+              <button class="menu-item" role="menuitem"><i data-lucide="pin"></i>Pin to overview<span class="hint">P</span></button>
+              <button class="menu-item" role="menuitem"><i data-lucide="copy"></i>Copy link</button>
+              <div class="menu-sep"></div>
+              <div class="menu-heading">Move to category</div>
+              <button class="menu-item" role="menuitemradio" aria-checked="true"><i data-lucide="check" class="check-mark"></i>Development</button>
+              <button class="menu-item" role="menuitemradio" aria-checked="false"><i data-lucide="check" class="check-mark"></i>Design</button>
+              <div class="menu-sep"></div>
+              <button class="menu-item danger" role="menuitem"><i data-lucide="trash-2"></i><span>Delete permanently<span class="desc">Project Admins only</span></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ds-block">
+        <h3>Command palette</h3>
+        <div class="ds-frame canvas" style="display:flex;justify-content:center">
+          <div class="palette" role="dialog" aria-label="Search example">
+            <div class="p-input"><i data-lucide="search"></i><input value="api" aria-label="Search"><span class="kbd">Esc</span></div>
+            <div class="p-group" role="listbox" aria-label="Knowledge">
+              <div class="menu-heading">Knowledge</div>
+              <div class="p-item" role="option" aria-selected="true"><span class="type-icon type-icon--sm type-icon--link"><i data-lucide="link-2"></i></span><span class="p-text"><span class="p-title"><mark>API</mark> reference (staging)</span><span class="p-sub">Atlas Mobile App · Development</span></span><i data-lucide="corner-down-left" class="p-enter sm"></i></div>
+              <div class="p-item" role="option" aria-selected="false"><span class="type-icon type-icon--sm type-icon--doc"><i data-lucide="file-text"></i></span><span class="p-text"><span class="p-title">Payments <mark>API</mark> error codes</span><span class="p-sub">Billing Revamp · Development</span></span><i data-lucide="corner-down-left" class="p-enter sm"></i></div>
+            </div>
+            <div class="p-group" role="listbox" aria-label="Projects">
+              <div class="menu-heading">Projects</div>
+              <div class="p-item" role="option" aria-selected="false"><span class="avatar avatar--xs avatar--org c5">B</span><span class="p-text"><span class="p-title">Billing Revamp</span><span class="p-sub">Client Delivery</span></span><i data-lucide="corner-down-left" class="p-enter sm"></i></div>
+            </div>
+            <div class="p-foot"><span><span class="kbd">↑</span><span class="kbd">↓</span>Move</span><span><span class="kbd">↵</span>Open</span><span>Only items you can view are shown</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ AUTH ═════════ -->
+    <section class="ds-section" id="auth">
+      <header>
+        <h2>Sign in</h2>
+        <p>Invitation context stays visible through sign-in, so people know what they're joining and with which role.</p>
+      </header>
+      <div class="ds-frame canvas">
+        <div class="auth-stage">
+          <div class="invite-hero">
+            <div class="ih-proj"><span class="avatar avatar--org">A</span><div><div style="font-weight:600;font-size:16px">Atlas Mobile App</div><div class="ds-caption">Northwind Studio · Client Delivery</div></div></div>
+            <p style="font-size:16px;line-height:24px">Pim Chaiyaporn invited you to join as a <b>Viewer</b>.</p>
+            <ul>
+              <li><i data-lucide="check"></i>Read the project's links, files and documents shared with Viewers</li>
+              <li><i data-lucide="check"></i>Follow the onboarding checklist</li>
+              <li><i data-lucide="check"></i>Invitation expires 21 Oct 2026</li>
+            </ul>
+          </div>
+          <form class="auth-card" id="signin" novalidate>
+            <div class="ds-row" style="gap:10px"><svg class="mark" width="28" height="28" aria-hidden="true"><use href="#tavern-mark"/></svg><span class="wordmark" style="font-size:18px">Tavern</span></div>
+            <div><h3>Sign in to accept</h3><p class="sub">Use the account for daniel.ortiz@northwind.example.</p></div>
+            <button class="btn btn--lg btn--block btn--google" type="button">
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.41 5.41 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+              Continue with Google
+            </button>
+            <div class="divider">or</div>
+            <div class="field"><label class="field-label" for="si-email">Email</label><input class="input input--lg" id="si-email" type="email" autocomplete="email" value="daniel.ortiz@northwind.example"></div>
+            <div class="field">
+              <div class="ds-row" style="justify-content:space-between"><label class="field-label" for="si-pass">Password</label><a href="#auth" style="font-size:13px">Forgot password?</a></div>
+              <input class="input input--lg" id="si-pass" type="password" autocomplete="current-password" aria-describedby="si-err" aria-invalid="true">
+              <span class="field-error" id="si-err"><i data-lucide="circle-alert"></i>Email or password is incorrect.</span>
+            </div>
+            <button class="btn btn--lg btn--block btn--primary" type="submit">Sign in and join</button>
+            <p class="ds-caption" style="text-align:center">New to Tavern? <a href="#auth">Create an account</a></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ TOKENS ═════════ -->
+    <section class="ds-section" id="tokens">
+      <header>
+        <h2>Token export</h2>
+        <p>The CSS custom properties behind this page, generated from its own stylesheet so they never drift. Paste them into <code>web/src/styles.css</code> to replace the current tokens.</p>
+      </header>
+      <div class="code">
+        <button class="btn btn--sm" type="button" data-copy="#token-code"><i data-lucide="copy"></i>Copy</button>
+        <pre><code id="token-code"></code></pre>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Dialogs -->
+<dialog class="dialog dialog--wide" id="invite-dialog" aria-labelledby="invite-title">
+  <form method="dialog" style="display:contents">
+    <div class="dialog-head">
+      <div style="flex:1"><h3 id="invite-title">Invite people to Atlas Mobile App</h3><p>Anyone with the link can join with the role you choose, until it expires or runs out of uses.</p></div>
+      <button class="btn btn--icon btn--subtle btn--sm" value="cancel" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="dialog-body">
+      <fieldset style="border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
+        <legend class="field-label" style="margin-bottom:8px">Role</legend>
+        <div class="role-options">
+          <label class="role-option"><input type="radio" class="radio" name="role" value="maintainer"><span><span class="ro-title">Maintainer</span><span class="ro-desc" style="display:block">Adds and edits knowledge and onboarding. Can't manage members.</span></span></label>
+          <label class="role-option"><input type="radio" class="radio" name="role" value="member" checked><span><span class="ro-title">Member</span><span class="ro-desc" style="display:block">Reads shared knowledge and adds items where the project allows.</span></span></label>
+          <label class="role-option"><input type="radio" class="radio" name="role" value="viewer"><span><span class="ro-title">Viewer</span><span class="ro-desc" style="display:block">Read-only. Good for clients and stakeholders.</span></span></label>
+        </div>
+      </fieldset>
+      <div class="ds-grid-2">
+        <div class="field"><label class="field-label" for="inv-exp">Expires after</label><div class="select-wrap"><select class="select" id="inv-exp"><option>1 day</option><option selected>7 days</option><option>30 days</option></select><i data-lucide="chevrons-up-down"></i></div></div>
+        <div class="field"><label class="field-label" for="inv-uses">Uses</label><div class="select-wrap"><select class="select" id="inv-uses"><option selected>1 person</option><option>Up to 5 people</option><option>Up to 10 people</option></select><i data-lucide="chevrons-up-down"></i></div></div>
+      </div>
+      <div class="field"><label class="field-label" for="inv-domain">Only allow emails from <span class="opt">Optional</span></label><div class="prefix-group"><span class="prefix">@</span><input class="input" id="inv-domain" placeholder="northwind.example"></div><span class="field-hint">People with other email addresses won't be able to use the link.</span></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" value="cancel">Cancel</button>
+      <button class="btn btn--primary" value="create" data-toast-on-close="Invitation link created. Copy it before closing.">Create invitation link</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-desc">
+  <form method="dialog" style="display:contents">
+    <div class="dialog-head" style="padding-top:20px">
+      <span class="danger-icon"><i data-lucide="user-minus"></i></span>
+      <div style="flex:1"><h3 id="confirm-title">Remove Arthit Kittisak?</h3><p id="confirm-desc">Arthit will lose access to Atlas Mobile App right away, including its files. Their edits stay in the activity log.</p></div>
+    </div>
+    <div class="dialog-foot" style="border-top:0;padding-top:20px">
+      <button class="btn" value="cancel" autofocus>Cancel</button>
+      <button class="btn btn--danger-solid" value="remove" data-toast-on-close="Arthit Kittisak was removed from Atlas Mobile App">Remove member</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast-region" id="toasts" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>
+(function () {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const css = getComputedStyle(document.documentElement);
+
+  /* Theme */
+  const root = document.documentElement;
+  function setTheme(v) {
+    if (v === 'system') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', v);
+    $$('#theme-switch button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeSet === v)));
+    try { localStorage.setItem('tavern-ds-theme', v); } catch (e) {}
+  }
+  let saved = 'system';
+  try { saved = localStorage.getItem('tavern-ds-theme') || 'system'; } catch (e) {}
+  setTheme(saved);
+  $$('#theme-switch button').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.themeSet)));
+
+  /* Primitive scales */
+  function luminance(hex) {
+    const n = hex.replace('#', ''); const c = [0, 2, 4].map(i => parseInt(n.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+  function buildScale(el, prefix, steps) {
+    steps.forEach(s => {
+      const v = css.getPropertyValue(`--${prefix}-${s}`).trim();
+      const d = document.createElement('div');
+      d.style.background = v;
+      d.style.color = luminance(v) > 0.4 ? '#1b1f26' : '#ffffff';
+      d.innerHTML = `<span>${s}</span><span>${v}</span>`;
+      el.appendChild(d);
+    });
+  }
+  buildScale($('#scale-gray'), 'gray', [0, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]);
+  buildScale($('#scale-blue'), 'blue', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]);
+
+  /* Semantic token table: read values from the stylesheet so light and dark stay true */
+  const tokenSheet = document.getElementById('tokens').sheet;
+  let lightMap = {}, darkMap = {};
+  for (const rule of tokenSheet.cssRules) {
+    if (rule.selectorText === ':root') for (const p of rule.style) lightMap[p] = rule.style.getPropertyValue(p).trim();
+    if (rule.selectorText === ':root[data-theme="dark"]') for (const p of rule.style) darkMap[p] = rule.style.getPropertyValue(p).trim();
+  }
+  const semRows = [
+    ['--color-canvas', 'App background behind panels'],
+    ['--color-surface', 'Panels, cards, inputs, dialogs'],
+    ['--color-surface-subtle', 'Table headers, row hover, secondary buttons'],
+    ['--color-surface-sunken', 'Wells, tags, disabled fields'],
+    ['--color-surface-selected', 'Selected row, current nav item'],
+    ['--color-border', 'Panel and card borders'],
+    ['--color-border-muted', 'Dividers inside panels'],
+    ['--color-border-input', 'Form control borders (3:1)'],
+    ['--color-fg', 'Primary text'],
+    ['--color-fg-muted', 'Secondary text, descriptions'],
+    ['--color-fg-subtle', 'Metadata, placeholders, captions'],
+    ['--color-fg-disabled', 'Disabled text and icons'],
+    ['--color-accent-fg', 'Links, selected labels'],
+    ['--color-accent-emphasis', 'Primary buttons, focus, active tab'],
+    ['--color-accent-subtle', 'Selected chips, info alerts'],
+    ['--color-success-fg', 'Clean, active, complete'],
+    ['--color-attention-fg', 'Scanning, pending, expiring'],
+    ['--color-danger-fg', 'Errors, denied, quarantined, destructive'],
+    ['--color-focus', 'Focus ring (2px, 2px offset)'],
+  ];
+  $('#sem-rows').innerHTML = semRows.map(([t, use]) => `<tr><td><code>${t}</code></td><td><span class="dual" title="${lightMap[t]} · ${darkMap[t]}"><span style="background:${lightMap[t]}"></span><span style="background:${darkMap[t]}"></span></span> <span class="mono ds-caption" style="margin-left:8px">${lightMap[t]} · ${darkMap[t]}</span></td><td class="t-muted" style="white-space:normal">${use}</td></tr>`).join('');
+
+  /* Token export */
+  function fmt(rule, sel) {
+    const lines = []; for (const p of rule.style) lines.push(`  ${p}: ${rule.style.getPropertyValue(p).trim()};`);
+    return `${sel} {\n${lines.join('\n')}\n}`;
+  }
+  let out = [];
+  for (const rule of tokenSheet.cssRules) {
+    if (rule.selectorText === ':root') out.push(fmt(rule, ':root'));
+    if (rule.selectorText === ':root[data-theme="dark"]') {
+      out.push('@media (prefers-color-scheme: dark) {\n' + fmt(rule, ':root:not([data-theme="light"])').replace(/^/gm, '  ') + '\n}');
+      out.push(fmt(rule, ':root[data-theme="dark"]'));
+    }
+  }
+  $('#token-code').textContent = out.join('\n\n');
+
+  /* Spacing scale */
+  const sp = [['space-1', 2], ['space-2', 4], ['space-3', 8], ['space-4', 12], ['space-5', 16], ['space-6', 20], ['space-7', 24], ['space-8', 32], ['space-9', 40], ['space-10', 48], ['space-11', 64]];
+  $('#space-scale').innerHTML = sp.map(([n, v]) => `<div class="space-row"><code class="ds-caption">--${n}</code><span class="num ds-caption">${v}px</span><span class="bar" style="width:${v * 2}px;max-width:100%"></span></div>`).join('');
+
+  /* Icon grid */
+  const icons = ['link-2', 'paperclip', 'file-text', 'pin', 'archive', 'search', 'filter', 'plus', 'pencil', 'trash-2', 'copy', 'external-link', 'download', 'upload', 'lock', 'eye', 'users', 'user-plus', 'mail', 'shield-check', 'shield-alert', 'list-checks', 'activity', 'settings', 'building-2', 'folder', 'book-open', 'clock', 'calendar', 'bell'];
+  $('#icon-grid').innerHTML = icons.map(n => `<span class="tt"><span tabindex="0" style="width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--color-border);border-radius:6px;color:var(--color-fg-muted)"><i data-lucide="${n}"></i></span><span class="tt-bubble" role="tooltip">${n}</span></span>`).join('');
+
+  if (window.lucide) lucide.createIcons();
+
+  /* Indeterminate demo */
+  const ind = $('#indet'); if (ind) ind.indeterminate = true;
+
+  /* Motion demo */
+  $('#motion-play').addEventListener('click', () => {
+    const t = $('#motion-track');
+    t.style.setProperty('--track-w', t.clientWidth + 'px');
+    t.classList.toggle('go');
+  });
+
+  /* Switches, chips, segmented, tabs */
+  $$('.switch').forEach(s => s.addEventListener('click', () => s.setAttribute('aria-checked', String(s.getAttribute('aria-checked') !== 'true'))));
+  $$('.chip').forEach(c => c.addEventListener('click', () => c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'))));
+  $$('.segmented[data-exclusive]').forEach(g => $$('button', g).forEach(b => b.addEventListener('click', () => $$('button', g).forEach(x => x.setAttribute('aria-pressed', String(x === b))))));
+  $$('[data-tabs]').forEach(g => $$('.tab', g).forEach(b => b.addEventListener('click', () => $$('.tab', g).forEach(x => x.setAttribute('aria-selected', String(x === b))))));
+
+  /* Menus */
+  function closeMenus(except) {
+    $$('[data-menu-trigger]').forEach(t => { const m = t.nextElementSibling; if (m && m !== except) { m.hidden = true; t.setAttribute('aria-expanded', 'false'); } });
+  }
+  $$('[data-menu-trigger]').forEach(t => {
+    const m = t.nextElementSibling;
+    t.addEventListener('click', e => { e.stopPropagation(); const open = m.hidden; closeMenus(m); m.hidden = !open; t.setAttribute('aria-expanded', String(open)); if (open) { const f = m.querySelector('.menu-item'); f && f.focus(); } });
+    m.addEventListener('click', e => { if (e.target.closest('.menu-item')) { m.hidden = true; t.setAttribute('aria-expanded', 'false'); } });
+  });
+  document.addEventListener('click', () => closeMenus());
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenus(); });
+
+  /* Toasts */
+  const region = $('#toasts');
+  function toast(text, tone, action) {
+    const el = document.createElement('div');
+    el.className = 'toast' + (tone ? ' toast--' + tone : '');
+    el.setAttribute('role', tone === 'danger' ? 'alert' : 'status');
+    el.innerHTML = `<i data-lucide="${tone === 'danger' ? 'circle-x' : 'circle-check'}" class="t-icon"></i><span class="t-text"></span>${action ? `<button class="t-action" type="button">${action}</button>` : ''}<button class="t-close" type="button" aria-label="Dismiss"><i data-lucide="x"></i></button>`;
+    el.querySelector('.t-text').textContent = text;
+    region.appendChild(el);
+    if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', root: el });
+    const kill = () => el.remove();
+    el.querySelector('.t-close').addEventListener('click', kill);
+    const a = el.querySelector('.t-action'); if (a) a.addEventListener('click', () => { kill(); toast('Restored', 'success'); });
+    if (tone !== 'danger') setTimeout(kill, action ? 8000 : 5000);
+    while (region.children.length > 3) region.firstElementChild.remove();
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-toast]');
+    if (t) toast(t.dataset.toast, t.dataset.tone || 'success', t.dataset.toastAction);
+  });
+
+  /* Dialogs */
+  let lastTrigger = null;
+  $$('[data-open]').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation(); closeMenus();
+    const d = document.getElementById(b.dataset.open); lastTrigger = b;
+    if (d && typeof d.showModal === 'function') d.showModal();
+  }));
+  $$('dialog.dialog').forEach(d => {
+    d.addEventListener('click', e => { if (e.target === d) d.close('cancel'); });
+    d.addEventListener('close', () => {
+      const btn = d.querySelector(`[value="${d.returnValue}"][data-toast-on-close]`);
+      if (btn) toast(btn.dataset.toastOnClose, 'success');
+      if (lastTrigger && document.contains(lastTrigger)) lastTrigger.focus();
+    });
+  });
+
+  /* Copy */
+  $$('[data-copy]').forEach(b => b.addEventListener('click', () => {
+    const src = $(b.dataset.copy); const text = src.value !== undefined ? src.value : src.textContent;
+    const done = () => toast(b.dataset.copy === '#token-code' ? 'Tokens copied' : 'Link copied', 'success');
+    const fallback = () => { if (src.select) { src.focus(); src.select(); } else { const r = document.createRange(); r.selectNodeContents(src); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } toast('Selected. Press Ctrl+C or ⌘C to copy.', 'success'); };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (err) { fallback(); }
+  }));
+
+  /* Onboarding checklist */
+  function updateChecklist() {
+    const steps = $$('#checklist .step'); const done = steps.filter(s => s.classList.contains('is-done')).length;
+    $('#ob-done').textContent = done; $('#ob-total').textContent = steps.length;
+    $('#ob-bar').style.width = (done / steps.length * 100) + '%';
+  }
+  $$('#checklist .step-toggle').forEach(b => b.addEventListener('click', () => {
+    const on = b.getAttribute('aria-checked') !== 'true';
+    b.setAttribute('aria-checked', String(on));
+    const step = b.closest('.step'); step.classList.toggle('is-done', on);
+    step.querySelector('.s-when').textContent = on ? 'Done today' : '';
+    updateChecklist();
+  }));
+
+  /* Dropzone */
+  const dz = $('#dropzone');
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('is-over'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('is-over'); }));
+  dz.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) toast(`${f.name} would upload here (demo)`, 'success'); });
+
+  /* Sign-in demo form */
+  $('#signin').addEventListener('submit', e => { e.preventDefault(); toast('Demo only. Nothing was sent.', 'success'); });
+})();
+</script>

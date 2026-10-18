@@ -1,0 +1,242 @@
+<title>Tavern Logo Exploration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one review sheet. A 16px/32px comparison strip first, then one row per concept showing every real use. */
+:root {
+  --font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --canvas: #f6f7f9; --surface: #ffffff; --surface-sunken: #eef0f3;
+  --border: #dfe3e8; --border-muted: #eaedf1;
+  --fg: #1b1f26; --fg-muted: #555d69; --fg-subtle: #687080;
+  --accent: #2447f5; --accent-fg: #1f3fe0; --accent-subtle: #eef1ff; --accent-muted: #bcc8ff;
+  --success-fg: #1a7a48; --attention-fg: #8a5a00;
+  --ink-white: #ffffff; --night: #0d1015; --night-fg: #e6e9ee; --night-accent: #3a5bff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #0d1015; --surface: #151a21; --surface-sunken: #0a0d11;
+    --border: #2b323c; --border-muted: #222831;
+    --fg: #e6e9ee; --fg-muted: #aab2bf; --fg-subtle: #858f9d;
+    --accent: #3a5bff; --accent-fg: #8fa2ff; --accent-subtle: #161d3d; --accent-muted: #2c3a80;
+    --success-fg: #5fc98e; --attention-fg: #e3b341;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --canvas: #0d1015; --surface: #151a21; --surface-sunken: #0a0d11;
+  --border: #2b323c; --border-muted: #222831;
+  --fg: #e6e9ee; --fg-muted: #aab2bf; --fg-subtle: #858f9d;
+  --accent: #3a5bff; --accent-fg: #8fa2ff; --accent-subtle: #161d3d; --accent-muted: #2c3a80;
+  --success-fg: #5fc98e; --attention-fg: #e3b341;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--canvas); color: var(--fg); font: 400 14px/20px var(--font-sans); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p { margin: 0; }
+h1, h2 { text-wrap: balance; }
+.wrap { max-width: 1160px; margin: 0 auto; padding: 40px 32px 80px; display: flex; flex-direction: column; gap: 48px; }
+@media (max-width: 720px) { .wrap { padding: 28px 16px 64px; gap: 40px; } }
+
+/* Logo glyph colors are driven by custom properties so one symbol serves every variant */
+.logo { display: block; flex: none; --plate: var(--accent); --ink: var(--ink-white); --cut: var(--accent); }
+.logo.on-night { --plate: var(--night-accent); --cut: var(--night-accent); }
+.logo.mono { --plate: transparent; --ink: var(--fg); --cut: var(--surface); }
+.logo.mono-night { --plate: transparent; --ink: var(--night-fg); --cut: var(--night); }
+
+.intro { display: flex; flex-direction: column; gap: 12px; max-width: 720px; }
+.intro h1 { font-size: 32px; line-height: 40px; font-weight: 700; letter-spacing: -0.02em; }
+.intro p { font-size: 16px; line-height: 24px; color: var(--fg-muted); }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.strip { overflow-x: auto; }
+.strip table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.strip th, .strip td { padding: 14px 16px; text-align: center; border-bottom: 1px solid var(--border-muted); }
+.strip th { font-size: 12px; font-weight: 600; color: var(--fg-subtle); }
+.strip td:first-child, .strip th:first-child { text-align: left; white-space: nowrap; }
+.strip tr:last-child td { border-bottom: 0; }
+.strip td .logo { margin: 0 auto; }
+.strip .tab-mock { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 6px 6px 0 0; background: var(--surface-sunken); border: 1px solid var(--border); border-bottom: 0; font-size: 12px; color: var(--fg-muted); }
+.rowlabel { font-weight: 600; }
+.rowlabel small { display: block; font-weight: 400; color: var(--fg-subtle); font-size: 12px; }
+
+.concept { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 24px; }
+.concept-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.concept-head h2 { font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -0.01em; }
+.pick { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--accent-subtle); color: var(--accent-fg); border: 1px solid var(--accent-muted); }
+.concept-head .letter { font-size: 13px; color: var(--fg-subtle); font-weight: 600; }
+.idea { color: var(--fg-muted); max-width: 70ch; font-size: 15px; line-height: 22px; }
+
+.sheet { display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 12px; }
+.tile { border: 1px solid var(--border); border-radius: 8px; min-height: 220px; position: relative; display: grid; place-items: center; padding: 24px; background: var(--surface); }
+.tile.night { background: var(--night); border-color: #222831; }
+.tile .cap { position: absolute; left: 14px; bottom: 10px; font-size: 12px; color: var(--fg-subtle); }
+.tile.night .cap { color: #858f9d; }
+.sizes { display: flex; align-items: flex-end; gap: 18px; }
+.lockup { display: flex; align-items: center; gap: 14px; }
+.lockup .wm { font-weight: 700; font-size: 32px; line-height: 1; letter-spacing: -0.015em; color: var(--fg); }
+.lockup .desc { font-size: 13px; color: var(--fg-subtle); margin-top: 6px; }
+.tile.night .wm { color: var(--night-fg); }
+.app-icon { width: 120px; height: 120px; border-radius: 27px; overflow: hidden; box-shadow: 0 1px 3px rgb(13 16 21 / 0.12), 0 12px 32px rgb(13 16 21 / 0.18); }
+.app-icon .logo { width: 100%; height: 100%; }
+.notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.note { padding: 14px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; gap: 4px; }
+.note b { font-size: 12px; font-weight: 600; }
+.note.good b { color: var(--success-fg); }
+.note.risk b { color: var(--attention-fg); }
+.note p { color: var(--fg-muted); }
+@media (max-width: 900px) { .sheet { grid-template-columns: minmax(0, 1fr); } .notes { grid-template-columns: minmax(0, 1fr); } }
+
+.construct { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: center; }
+.construct .grid-bg { width: 220px; height: 220px; border-radius: 8px; border: 1px solid var(--border); background-color: var(--surface);
+  background-image: linear-gradient(var(--border-muted) 1px, transparent 1px), linear-gradient(90deg, var(--border-muted) 1px, transparent 1px);
+  background-size: calc(220px / 12) calc(220px / 12); display: grid; place-items: center; }
+@media (max-width: 600px) { .construct { grid-template-columns: minmax(0, 1fr); } }
+.theme-btns { display: inline-flex; gap: 4px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-sunken); align-self: flex-start; }
+.theme-btns button { border: 0; background: none; height: 26px; padding: 0 10px; border-radius: 4px; font: 500 13px var(--font-sans); color: var(--fg-muted); cursor: pointer; }
+.theme-btns button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 0 0 1px var(--border); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- A · Signboard (current) -->
+  <symbol id="logo-a" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10.5" style="fill:var(--plate)"/>
+    <path d="M11.25 12.75h25.5" stroke-width="3.9" stroke-linecap="round" fill="none" style="stroke:var(--ink)"/>
+    <path d="M17.25 12.75v6M30.75 12.75v6" stroke-width="2.7" stroke-linecap="round" fill="none" style="stroke:var(--ink)"/>
+    <rect x="12.75" y="18.75" width="22.5" height="17.25" rx="3" style="fill:var(--ink)"/>
+    <path d="M18 25.1h12M18 30.4h7.5" stroke-width="2.7" stroke-linecap="round" fill="none" style="stroke:var(--cut)"/>
+  </symbol>
+  <!-- B · Pushpin T -->
+  <symbol id="logo-b" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10.5" style="fill:var(--plate)"/>
+    <rect x="12" y="9" width="24" height="7" rx="3.5" style="fill:var(--ink)"/>
+    <path d="M18.6 16h10.8l-1.5 9.2h-7.8z" style="fill:var(--ink)"/>
+    <rect x="13.5" y="24.8" width="21" height="4.6" rx="2.3" style="fill:var(--ink)"/>
+    <rect x="22.6" y="29" width="2.8" height="11" rx="1.4" style="fill:var(--ink)"/>
+  </symbol>
+  <!-- C · Index T -->
+  <symbol id="logo-c" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10.5" style="fill:var(--plate)"/>
+    <rect x="10" y="10" width="28" height="7" rx="3.5" style="fill:var(--ink)"/>
+    <rect x="18" y="20" width="12" height="4.6" rx="2.3" style="fill:var(--ink)"/>
+    <rect x="18" y="27.4" width="12" height="4.6" rx="2.3" style="fill:var(--ink)"/>
+    <rect x="18" y="34.8" width="12" height="4.6" rx="2.3" style="fill:var(--ink)"/>
+  </symbol>
+  <!-- D · Bookmark T -->
+  <symbol id="logo-d" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10.5" style="fill:var(--plate)"/>
+    <path d="M14.5 8.5h19a2 2 0 0 1 2 2v29.2a.8.8 0 0 1-1.24.67L24 33.7l-10.26 6.67a.8.8 0 0 1-1.24-.67V10.5a2 2 0 0 1 2-2z" style="fill:var(--ink)"/>
+    <rect x="17.5" y="14" width="13" height="3.6" rx="1.2" style="fill:var(--cut)"/>
+    <rect x="22.2" y="14" width="3.6" height="13.5" rx="1.2" style="fill:var(--cut)"/>
+  </symbol>
+  <!-- E · Doorway -->
+  <symbol id="logo-e" viewBox="0 0 48 48">
+    <rect width="48" height="48" rx="10.5" style="fill:var(--plate)"/>
+    <path d="M12.5 39.5V22a11.5 11.5 0 0 1 23 0v17.5z" style="fill:var(--ink)"/>
+    <path d="M18 39.5V23.5a6 6 0 0 1 12 0v16" stroke-width="2.2" fill="none" style="stroke:var(--cut)"/>
+    <circle cx="26.6" cy="31" r="1.7" style="fill:var(--cut)"/>
+  </symbol>
+</svg>
+
+<main class="wrap">
+  <div class="intro">
+    <h1>Tavern logo exploration</h1>
+    <p>Five icon concepts in the electric cobalt system. Each is drawn on a 48-unit grid, has to read as a browser tab icon at 16px, and has to carry one true thing about Tavern: pinning sources, indexing them, or opening a project to new members.</p>
+    <div class="theme-btns" role="group" aria-label="Page theme">
+      <button type="button" data-t="system" aria-pressed="true">System</button>
+      <button type="button" data-t="light" aria-pressed="false">Light</button>
+      <button type="button" data-t="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+
+  <section class="panel strip" aria-label="Small-size comparison">
+    <table>
+      <thead><tr><th>Concept</th><th>16px</th><th>24px</th><th>32px</th><th>Browser tab</th><th>Mono</th></tr></thead>
+      <tbody id="strip"></tbody>
+    </table>
+  </section>
+
+  <div id="concepts" style="display:flex;flex-direction:column;gap:56px"></div>
+</main>
+
+<script>
+(function () {
+  const concepts = [
+    { id: 'b', name: 'Pushpin', pick: true,
+      idea: 'A pushpin seen from the side is a T. Pinning is how teams mark the sources that matter, and the knowledge board is literally a board you pin to.',
+      good: 'Holds its shape at 16px. Owns the product\'s core gesture (pin), and the letterform comes for free.',
+      risk: 'Pushpin icons are common in UI. The T silhouette and the cobalt plate have to do the distinguishing.' },
+    { id: 'c', name: 'Index T',
+      idea: 'A T whose stem is three list rows: a heading over an index of sources. Reads as the letter first and as a list second.',
+      good: 'The cleanest geometry of the set. Stays crisp at every size and matches the list rows in the product.',
+      risk: 'Quieter and more abstract. At 16px the rows merge into a plain T, so the list idea only shows at larger sizes.' },
+    { id: 'a', name: 'Signboard',
+      idea: 'The current mark: an inn\'s hanging sign carrying a short list. A signpost to the right resources, with a nod to the Tavern name.',
+      good: 'Most narrative of the five and the strongest link to the name. Already applied in the app.',
+      risk: 'Too much detail for 16px. The chains and list lines blur into a white block in a browser tab.' },
+    { id: 'd', name: 'Bookmark T',
+      idea: 'A bookmark ribbon with a T cut out of it: the place you return to for a project\'s sources.',
+      good: 'Instantly reads as "saved reference". The cut-out T keeps it from being a generic bookmark.',
+      risk: 'Bookmark shapes are widely used by reading and note apps. The cut-out gets thin at 16px.' },
+    { id: 'e', name: 'Doorway',
+      idea: 'An arched inn door with a knob: the way into a project for someone who just accepted an invitation.',
+      good: 'Warm and distinctive. Ties onboarding, access and the Tavern name together.',
+      risk: 'At small sizes a plain arch can read as a tombstone or a generic "home". Needs the frame line to stay a door.' },
+  ];
+  const use = (id, size, cls = '') => `<svg class="logo ${cls}" width="${size}" height="${size}" aria-hidden="true"><use href="#logo-${id}"/></svg>`;
+
+  document.getElementById('strip').innerHTML = concepts.map(c => `
+    <tr>
+      <td><span class="rowlabel">${c.name}${c.pick ? ' <span class="pick">Recommended</span>' : ''}</span></td>
+      <td>${use(c.id, 16)}</td><td>${use(c.id, 24)}</td><td>${use(c.id, 32)}</td>
+      <td><span class="tab-mock">${use(c.id, 16)}Atlas Mobile App · Tavern</span></td>
+      <td>${use(c.id, 28, 'mono')}</td>
+    </tr>`).join('');
+
+  document.getElementById('concepts').innerHTML = concepts.map((c, i) => `
+    <section class="concept" id="concept-${c.id}">
+      <div class="concept-head"><h2>${c.name}</h2>${c.pick ? '<span class="pick">Recommended</span>' : ''}</div>
+      <p class="idea">${c.idea}</p>
+      <div class="sheet">
+        <div class="tile">
+          <div class="lockup">${use(c.id, 56)}<div><div class="wm">Tavern</div><div class="desc">Project Knowledge Board</div></div></div>
+          <span class="cap">Lockup on light</span>
+        </div>
+        <div class="tile night">
+          <div class="lockup">${use(c.id, 48, 'on-night')}<div class="wm" style="font-size:28px">Tavern</div></div>
+          <span class="cap">Lockup on dark</span>
+        </div>
+        <div class="tile">
+          <div class="app-icon">${use(c.id, 120)}</div>
+          <span class="cap">App icon</span>
+        </div>
+      </div>
+      <div class="sheet">
+        <div class="tile" style="min-height:160px">
+          <div class="sizes">${use(c.id, 64)}${use(c.id, 40)}${use(c.id, 24)}${use(c.id, 16)}</div>
+          <span class="cap">64 / 40 / 24 / 16</span>
+        </div>
+        <div class="tile" style="min-height:160px">
+          <div class="sizes">${use(c.id, 64, 'mono')}${use(c.id, 32, 'mono')}</div>
+          <span class="cap">One color, no plate</span>
+        </div>
+        <div class="tile night" style="min-height:160px">
+          <div class="sizes">${use(c.id, 64, 'mono-night')}${use(c.id, 32, 'mono-night')}</div>
+          <span class="cap">One color on dark</span>
+        </div>
+      </div>
+      <div class="notes">
+        <div class="note good"><b>Why it works</b><p>${c.good}</p></div>
+        <div class="note risk"><b>Risk</b><p>${c.risk}</p></div>
+      </div>
+      ${c.pick ? `<div class="construct"><div class="grid-bg">${use(c.id, 176)}</div><p class="idea">Construction: 48-unit grid with a 10.5 corner radius (22%, the same ratio as the app's dialogs). The cap is 24 wide, half the plate. The pin body tapers 10.8 to 7.8 units so it reads as a pin, not a plain T, and the needle is 2.8 units so it survives at 16px. One white glyph on cobalt, no gradients or shadows.</p></div>` : ''}
+    </section>`).join('');
+
+  const root = document.documentElement;
+  document.querySelectorAll('.theme-btns button').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.t === 'system') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', b.dataset.t);
+    document.querySelectorAll('.theme-btns button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+})();
+</script>

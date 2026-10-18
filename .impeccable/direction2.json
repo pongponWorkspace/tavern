@@ -1,0 +1,52 @@
+{
+  "title": "Choose Tavern's visual world",
+  "question": "The roll assigned Swiss Grid Register. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Swiss Grid Register",
+      "kicker": "THE ROLL",
+      "lineage": "International Typographic Style: Müller-Brockmann grid systems, objective information design",
+      "thesis": "Knowledge as an objective register: one grotesk, a strict modular grid, flat color fields that code item type, and no ornament anywhere.",
+      "palette": ["#ffffff", "#f3f4f6", "#0b0c0e", "#2a35e8", "#0f8a6a", "#c2410c"],
+      "materials": ["flat offset color fields", "one grotesk family in widths", "hairline column rules"],
+      "viewport": "Flush-left headings in a wide bold grotesk, a column grid you can feel, the active section as a solid ultramarine field, items listed as a typeset register with owner and freshness columns.",
+      "risk": "Strict restraint can feel cold; it needs the color fields and confident type scale to keep warmth and hierarchy."
+    },
+    {
+      "id": "challenger-datamatics",
+      "label": "Data Field",
+      "lineage": "Ryoji Ikeda datamatics: black/white barcode fields, monospace numerics",
+      "thesis": "The project as a dense data field; every access and change rendered as crisp numerics.",
+      "case": "Fuses poorly overall: strictly black and white leaves no way to code item types or states, though it would suit the audit log.",
+      "hero": "https://impeccable.style/worlds/cards/ikeda-datamatics-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/ikeda-datamatics.webp"
+    },
+    {
+      "id": "challenger-score",
+      "label": "Movement Score",
+      "lineage": "Labanotation dance scores: a vertical staff read upward, shaded blocks",
+      "thesis": "Onboarding as a score: each step a block whose length is its effort, read upward through time.",
+      "case": "Fuses poorly: it could carry onboarding progress but has no vocabulary for a searchable knowledge list.",
+      "hero": "https://impeccable.style/worlds/cards/notation-diagram-systems-labanotation-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/notation-diagram-systems-labanotation.webp"
+    },
+    {
+      "id": "challenger-feed",
+      "label": "Full-bleed Feed",
+      "lineage": "Vertical video feed surfaces: one item per viewport, action rail",
+      "thesis": "One resource at a time, full screen, with the next one a flick away.",
+      "case": "Fuses poorly: people scan and compare many resources at once, so a one-at-a-time view hides what they need.",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-vertical-video-feed-surface-hero.webp"
+    }
+  ],
+  "reroll": true,
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "Modern B2B SaaS done straight: neutral grays, one blue accent, sidebar and tables at full craft.",
+    "viewport": "Sidebar navigation, project header, filterable knowledge list.",
+    "palette": ["#ffffff", "#f4f5f7", "#111827", "#2563eb"]
+  },
+  "steer": true
+}

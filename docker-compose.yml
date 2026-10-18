@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: tavern
+      POSTGRES_PASSWORD: tavern
+      POSTGRES_DB: tavern
+    ports:
+      - "54329:5432"
+    volumes:
+      - tavern-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tavern"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  tavern-db:
