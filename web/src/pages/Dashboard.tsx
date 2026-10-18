@@ -8,18 +8,19 @@ import { KnowledgeRow, RowSkeleton } from '../components/Knowledge';
 import { Empty, ErrorAlert, RoleBadge } from '../components/ui';
 import { TileGridSkeleton } from '../components/Skeletons';
 import { NotFound, UnknownOrganization } from './NotFound';
+import { t } from '../lib/i18n';
 
 export function Dashboard() {
   const { tenantId = '' } = useParams();
   const me = useMe();
-  const tenant = me.data?.tenants.find((t) => t.id === tenantId);
+  const tenant = me.data?.tenants.find((entry) => entry.id === tenantId);
   const perms = useTenantPerms(tenantId);
   const q = useQuery({ queryKey: ['dashboard', tenantId], queryFn: () => api(`/tenants/${tenantId}/dashboard`), enabled: Boolean(tenant) });
   if (!tenant) return <UnknownOrganization />;
   const d = q.data;
   const isAdmin = perms.createProject;
   const hour = new Date().getHours();
-  const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greet = hour < 12 ? t('Good morning') : hour < 18 ? t('Good afternoon') : t('Good evening');
 
   return (
     <div className="content">
@@ -32,7 +33,7 @@ export function Dashboard() {
 
       <section>
         <div className="section-head">
-          <h2>Your projects</h2>
+          <h2>{t("Your projects")}</h2>
         </div>
         {q.isLoading ? (
           <TileGridSkeleton n={3} />
@@ -40,10 +41,10 @@ export function Dashboard() {
           <div className="card">
             <Empty
               icon={<FolderKanban size={22} />}
-              title="You're not on any projects yet"
-              action={isAdmin ? <Link className="btn primary" to={`/t/${tenantId}/workspaces`}>Create a project</Link> : undefined}
+              title={t("You're not on any projects yet")}
+              action={isAdmin ? <Link className="btn primary" to={`/t/${tenantId}/workspaces`}>{t("Create a project")}</Link> : undefined}
             >
-              {isAdmin ? null : 'Ask a Project Admin for an invitation link.'}
+              {isAdmin ? null : t("Ask a Project Admin for an invitation link.")}
             </Empty>
           </div>
         ) : (
@@ -60,10 +61,10 @@ export function Dashboard() {
                   {p.description && <p className="k-desc">{p.description}</p>}
                 </div>
                 <div className="k-tile-foot">
-                  <span>{p.itemCount} {p.itemCount === 1 ? 'resource' : 'resources'}</span>
-                  {p.status === 'archived' && <span className="badge">Archived</span>}
+                  <span>{p.itemCount} {p.itemCount === 1 ? t("resource") : t("resources")}</span>
+                  {p.status === 'archived' && <span className="badge">{t("Archived")}</span>}
                   <span className="spacer" />
-                  <span>active {timeAgo(p.lastActivityAt)}</span>
+                  <span>{t("active")}{' '}{timeAgo(p.lastActivityAt)}</span>
                 </div>
               </Link>
             ))}
@@ -72,10 +73,10 @@ export function Dashboard() {
       </section>
 
       <section className="section">
-        <div className="section-head"><h2>Recently updated</h2></div>
+        <div className="section-head"><h2>{t("Recently updated")}</h2></div>
         <div className="card">
           {q.isLoading ? <RowSkeleton /> : d.recentKnowledge.length === 0 ? (
-            <Empty icon={<Sparkles size={22} />} title="Nothing here yet" />
+            <Empty icon={<Sparkles size={22} />} title={t("Nothing here yet")} />
           ) : (
             <div className="k-list">{d.recentKnowledge.map((i: any) => <KnowledgeRow key={i.id} item={i} showProject />)}</div>
           )}

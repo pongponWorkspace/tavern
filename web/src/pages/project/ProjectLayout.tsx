@@ -7,6 +7,7 @@ import { PROJECT_ROLE_LABEL } from '../../lib/format';
 import { RoleBadge } from '../../components/ui';
 import { ProjectSkeleton } from '../../components/Skeletons';
 import { NotFound } from '../NotFound';
+import { t } from '../../lib/i18n';
 
 export const useProject = () => useOutletContext<{ project: Project }>().project;
 
@@ -50,8 +51,7 @@ export function ProjectLayout() {
     <div className="content">
       {viewAs && (
         <div className="preview-bar" role="status">
-          <Eye size={16} /> Viewing as <strong>{PROJECT_ROLE_LABEL[viewAs]}</strong>. Changes are off.
-        </div>
+          <Eye size={16} />{' '}{t("Viewing as")}{' '}<strong>{PROJECT_ROLE_LABEL[viewAs]}</strong>{t(". Changes are off.")}</div>
       )}
       <div className="page-head" style={{ marginBottom: 16 }}>
         <div style={{ minWidth: 0 }}>
@@ -62,17 +62,17 @@ export function ProjectLayout() {
           <div className="row wrap" style={{ gap: 12 }}>
             <h1>{p.name}</h1>
             <RoleBadge role={p.myRole} />
-            {p.status === 'archived' && <span className="badge warn"><Archive size={12} /> Archived</span>}
+            {p.status === 'archived' && <span className="badge warn"><Archive size={12} />{' '}{t("Archived")}</span>}
           </div>
         </div>
         {p.actualRole === 'project_admin' && (
           <label className="row view-as">
-            <span className="subtle">View as</span>
-            <select className="select" aria-label="View project as" value={viewAs ?? ''} onChange={(e) => changeViewAs((e.target.value || null) as typeof viewAs)}>
-              <option value="">Project Admin</option>
-              <option value="maintainer">Maintainer</option>
-              <option value="member">Member</option>
-              <option value="viewer">Viewer</option>
+            <span className="subtle">{t("View as")}</span>
+            <select className="select" aria-label={t("View project as")} value={viewAs ?? ''} onChange={(e) => changeViewAs((e.target.value || null) as typeof viewAs)}>
+              <option value="">{t("Project Admin")}</option>
+              <option value="maintainer">{t("Maintainer")}</option>
+              <option value="member">{t("Member")}</option>
+              <option value="viewer">{t("Viewer")}</option>
             </select>
           </label>
         )}
@@ -80,19 +80,19 @@ export function ProjectLayout() {
       {!p.writable && (
         <div style={{ marginBottom: 16 }}>
           <div className="alert warn" role="status">
-            {p.status === 'archived' ? 'This project is archived. Everything is read-only.' : 'This project’s workspace is archived. Everything is read-only.'}
-            {admin && p.status === 'archived' && <> You can restore it from <Link to={`${base}/settings`}>Settings</Link>.</>}
+            {p.status === 'archived' ? t("This project is archived. Everything is read-only.") : t("This project’s workspace is archived. Everything is read-only.")}
+            {admin && p.status === 'archived' && <>{' '}{t("You can restore it from")}{' '}<Link to={`${base}/settings`}>{t("Settings")}</Link>.</>}
           </div>
         </div>
       )}
-      <nav className="tabs" aria-label="Project sections">
-        <NavLink to={base} end><LayoutDashboard size={16} /> Overview</NavLink>
-        <NavLink to={`${base}/knowledge`} className={({ isActive }) => (isActive || location.pathname.startsWith(`${base}/k/`) ? 'active' : '')}><BookOpen size={16} /> Knowledge</NavLink>
-        <NavLink to={`${base}/onboarding`}><ListChecks size={16} /> Onboarding</NavLink>
-        {admin && <NavLink to={`${base}/members`}><Users size={16} /> Members</NavLink>}
-        {admin && <NavLink to={`${base}/activity`}><ScrollText size={16} /> Activity</NavLink>}
-        <NavLink to={`${base}/roles`}><ShieldCheck size={16} /> Roles &amp; permissions</NavLink>
-        {(admin || p.permissions['onboarding.manage']) && <NavLink to={`${base}/settings`}><Settings size={16} /> Settings</NavLink>}
+      <nav className="tabs" aria-label={t("Project sections")}>
+        <NavLink to={base} end><LayoutDashboard size={16} />{' '}{t("Overview")}</NavLink>
+        <NavLink to={`${base}/knowledge`} className={({ isActive }) => (isActive || location.pathname.startsWith(`${base}/k/`) ? 'active' : '')}><BookOpen size={16} />{' '}{t("Knowledge")}</NavLink>
+        <NavLink to={`${base}/onboarding`}><ListChecks size={16} />{' '}{t("Onboarding")}</NavLink>
+        {admin && <NavLink to={`${base}/members`}><Users size={16} />{' '}{t("Members")}</NavLink>}
+        {admin && <NavLink to={`${base}/activity`}><ScrollText size={16} />{' '}{t("Activity")}</NavLink>}
+        <NavLink to={`${base}/roles`}><ShieldCheck size={16} />{' '}{t("Roles & permissions")}</NavLink>
+        {(admin || p.permissions['onboarding.manage']) && <NavLink to={`${base}/settings`}><Settings size={16} />{' '}{t("Settings")}</NavLink>}
       </nav>
       <Outlet context={{ project: p }} />
     </div>

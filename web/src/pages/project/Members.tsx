@@ -7,12 +7,13 @@ import { useMe } from '../../lib/session';
 import { Avatar, ConfirmDialog, Empty, ErrorAlert, Field, Modal, Spinner, TenantRoleBadge, errorText, useToast } from '../../components/ui';
 import { PageHeadSkeleton, Skel, TableSkeleton } from '../../components/Skeletons';
 import { useProject } from './ProjectLayout';
+import { t } from '../../lib/i18n';
 
 const ROLES: ProjectRole[] = ['project_admin', 'maintainer', 'member', 'viewer'];
 
 export function InviteStatus({ status }: { status: string }) {
   const tone = status === 'active' ? 'ok' : status === 'revoked' || status === 'expired' ? 'danger' : '';
-  const label = { active: 'Active', revoked: 'Revoked', expired: 'Expired', accepted: 'Accepted', exhausted: 'Used up' }[status] ?? status;
+  const label = { active: t("Active"), revoked: t("Revoked"), expired: t("Expired"), accepted: t("Accepted"), exhausted: t("Used up") }[status] ?? status;
   return <span className={`badge ${tone}`}>{label}</span>;
 }
 
@@ -50,56 +51,56 @@ export function InviteModal({ open, onClose, endpoint, roles, defaultRole, scope
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(result!.url);
-      toast('Link copied');
+      toast(t("Link copied"));
     } catch {
-      toast('Select the link and copy it manually', 'error');
+      toast(t("Select the link and copy it manually"), 'error');
     }
   };
   const roleHint = roles.find((r) => r.value === form.role)?.hint;
   return (
-    <Modal open={open} onClose={close} title={result ? 'Invitation link ready' : `Invite people to ${scopeName}`}>
+    <Modal open={open} onClose={close} title={result ? t("Invitation link ready") : t('Invite people to {name}', { name: scopeName })}>
       {result ? (
         <div className="form">
-          <p className="muted">It's shown only once, so copy it now.</p>
+          <p className="muted">{t("It's shown only once, so copy it now.")}</p>
           <div className="copy-field">
-            <input className="input" readOnly value={result.url} onFocus={(e) => e.target.select()} aria-label="Invitation link" />
-            <button className="btn primary" onClick={copy}><Copy size={15} /> Copy</button>
+            <input className="input" readOnly value={result.url} onFocus={(e) => e.target.select()} aria-label={t("Invitation link")} />
+            <button className="btn primary" onClick={copy}><Copy size={15} />{' '}{t("Copy")}</button>
           </div>
-          {form.email && <p className="subtle">We also emailed it to {form.email}.</p>}
-          <div className="row"><span className="spacer" /><button className="btn" onClick={close}>Done</button></div>
+          {form.email && <p className="subtle">{t("We also emailed it to")}{' '}{form.email}.</p>}
+          <div className="row"><span className="spacer" /><button className="btn" onClick={close}>{t("Done")}</button></div>
         </div>
       ) : (
         <form className="form" onSubmit={submit}>
           <ErrorAlert error={error} />
-          <Field label="Role" htmlFor="ir" hint={roleHint}>
+          <Field label={t("Role")} htmlFor="ir" hint={roleHint}>
             <select id="ir" className="select" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
               {roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           </Field>
           <div className="form-row">
-            <Field label="Expires after" htmlFor="ie">
+            <Field label={t("Expires after")} htmlFor="ie">
               <select id="ie" className="select" value={form.expiresInDays} onChange={(e) => setForm({ ...form, expiresInDays: Number(e.target.value) })}>
-                {[1, 3, 7, 14, 30].map((d) => <option key={d} value={d}>{d} day{d > 1 ? 's' : ''}</option>)}
+                {[1, 3, 7, 14, 30].map((d) => <option key={d} value={d}>{d}{' '}{t("day")}{d > 1 ? 's' : ''}</option>)}
               </select>
             </Field>
-            <Field label="Can be used" htmlFor="iu">
+            <Field label={t("Can be used")} htmlFor="iu">
               <select id="iu" className="select" value={form.maxUses} onChange={(e) => setForm({ ...form, maxUses: Number(e.target.value) })} disabled={Boolean(form.email)}>
-                {[1, 5, 10, 25, 50, 100].map((n) => <option key={n} value={n}>{n === 1 ? 'Once' : `Up to ${n} times`}</option>)}
+                {[1, 5, 10, 25, 50, 100].map((n) => <option key={n} value={n}>{n === 1 ? t("Once") : t('Up to {n} times', { n })}</option>)}
               </select>
             </Field>
           </div>
           <details>
-            <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>Restrict who can accept</summary>
+            <summary style={{ cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>{t("Restrict who can accept")}</summary>
             <div className="form" style={{ marginTop: 12 }}>
-              <Field label="Specific email" htmlFor="iem" hint="We'll email it. Only this address can accept.">
-                <input id="iem" className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="name@company.com" />
+              <Field label={t("Specific email")} htmlFor="iem" hint={t("We'll email it. Only this address can accept.")}>
+                <input id="iem" className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("name@company.com")} />
               </Field>
-              <Field label="Email domain" htmlFor="idm" hint="Only addresses at this domain can accept.">
-                <input id="idm" className="input" value={form.allowedDomain} onChange={(e) => setForm({ ...form, allowedDomain: e.target.value })} placeholder="company.com" />
+              <Field label={t("Email domain")} htmlFor="idm" hint={t("Only addresses at this domain can accept.")}>
+                <input id="idm" className="input" value={form.allowedDomain} onChange={(e) => setForm({ ...form, allowedDomain: e.target.value })} placeholder={t("company.com")} />
               </Field>
             </div>
           </details>
-          <div className="row"><span className="spacer" /><button type="button" className="btn" onClick={close}>Cancel</button><button className="btn primary" disabled={busy}>{busy ? <Spinner /> : <><Link2 size={15} /> Create link</>}</button></div>
+          <div className="row"><span className="spacer" /><button type="button" className="btn" onClick={close}>{t("Cancel")}</button><button className="btn primary" disabled={busy}>{busy ? <Spinner /> : <><Link2 size={15} />{' '}{t("Create link")}</>}</button></div>
         </form>
       )}
     </Modal>
@@ -139,16 +140,16 @@ export function MembersPage() {
     <div className="stack" style={{ gap: 28 }}>
       <section>
         <div className="section-head">
-          <div><h2>Members <span className="subtle" style={{ fontWeight: 400 }}>{members.data?.data.length}</span></h2></div>
+          <div><h2>{t("Members")}{' '}<span className="subtle" style={{ fontWeight: 400 }}>{members.data?.data.length}</span></h2></div>
           <div className="row">
-            <button className="btn" onClick={() => setAdding(true)} disabled={!p.writable}><UserPlus size={15} /> Add from organization</button>
-            <button className="btn primary" onClick={() => setInviting(true)} disabled={!p.writable}><Link2 size={15} /> Invite with link</button>
+            <button className="btn" onClick={() => setAdding(true)} disabled={!p.writable}><UserPlus size={15} />{' '}{t("Add from organization")}</button>
+            <button className="btn primary" onClick={() => setInviting(true)} disabled={!p.writable}><Link2 size={15} />{' '}{t("Invite with link")}</button>
           </div>
         </div>
         <ErrorAlert error={members.error} />
         <div className="card table-wrap">
           <table className="table">
-            <thead><tr><th>Person</th><th>Role</th><th>Onboarding</th><th>Joined</th><th aria-label="Actions" /></tr></thead>
+            <thead><tr><th>{t("Person")}</th><th>{t("Role")}</th><th>{t("Onboarding")}</th><th>{t("Joined")}</th><th aria-label={t("Actions")} /></tr></thead>
             <tbody>
               {members.data?.data.map((m: any) => {
                 const pr = progress.get(m.userId);
@@ -158,13 +159,13 @@ export function MembersPage() {
                     <td>
                       <div className="person">
                         <Avatar id={m.userId} name={m.displayName} url={m.avatarUrl} />
-                        <div style={{ minWidth: 0 }}><div className="person-name">{m.displayName}{isMe && <span className="subtle"> (you)</span>}</div><div className="person-email">{m.email}</div></div>
+                        <div style={{ minWidth: 0 }}><div className="person-name">{m.displayName}{isMe && <span className="subtle">{' '}{t("(you)")}</span>}</div><div className="person-email">{m.email}</div></div>
                       </div>
                     </td>
                     <td>
                       <select className="select" value={m.role} disabled={!p.writable}
-                        aria-label={`Role for ${m.displayName}`}
-                        onChange={(e) => run(() => api(`/projects/${p.id}/members/${m.userId}`, { method: 'PATCH', body: { role: e.target.value } }), `${m.displayName} is now ${PROJECT_ROLE_LABEL[e.target.value as ProjectRole]}`)}>
+                        aria-label={t('Role for {name}', { name: m.displayName })}
+                        onChange={(e) => run(() => api(`/projects/${p.id}/members/${m.userId}`, { method: 'PATCH', body: { role: e.target.value } }), t('{name} is now {role}', { name: m.displayName, role: PROJECT_ROLE_LABEL[e.target.value as ProjectRole] }))}>
                         {ROLES.map((r) => <option key={r} value={r}>{PROJECT_ROLE_LABEL[r]}</option>)}
                       </select>
                     </td>
@@ -173,13 +174,13 @@ export function MembersPage() {
                         <div style={{ minWidth: 110 }}>
                           <div className="progress success" style={{ height: 6 }}><span style={{ width: `${Math.round((pr.completed / pr.required) * 100)}%` }} /></div>
                           <span className="subtle">{pr.completed}/{pr.required}</span>
-                          {pr.overdue > 0 && <span className="badge danger" style={{ marginLeft: 6 }}>{pr.overdue} overdue</span>}
+                          {pr.overdue > 0 && <span className="badge danger" style={{ marginLeft: 6 }}>{pr.overdue}{' '}{t("overdue")}</span>}
                         </div>
                       ) : <span className="subtle">—</span>}
                     </td>
-                    <td className="muted" title={fullDate(m.joinedAt)}>{timeAgo(m.joinedAt)}{m.invitedBy && <div className="subtle">by {m.invitedBy}</div>}</td>
+                    <td className="muted" title={fullDate(m.joinedAt)}>{timeAgo(m.joinedAt)}{m.invitedBy && <div className="subtle">{t("by")}{' '}{m.invitedBy}</div>}</td>
                     <td style={{ textAlign: 'right' }}>
-                      <button className="btn ghost sm" onClick={() => setRemoving(m)} disabled={!p.writable} aria-label={`Remove ${m.displayName}`}><UserMinus size={15} /> Remove</button>
+                      <button className="btn ghost sm" onClick={() => setRemoving(m)} disabled={!p.writable} aria-label={`Remove ${m.displayName}`}><UserMinus size={15} />{' '}{t("Remove")}</button>
                     </td>
                   </tr>
                 );
@@ -190,24 +191,24 @@ export function MembersPage() {
       </section>
 
       <section>
-        <div className="section-head"><div><h2>Invitation links</h2></div></div>
+        <div className="section-head"><div><h2>{t("Invitation links")}</h2></div></div>
         <div className="card table-wrap">
           {invites.data?.data.length === 0 ? (
-            <Empty icon={<Link2 size={22} />} title="No invitations yet" />
+            <Empty icon={<Link2 size={22} />} title={t("No invitations yet")} />
           ) : (
             <table className="table">
-              <thead><tr><th>Role</th><th>Restriction</th><th>Uses</th><th>Status</th><th>Expires</th><th>Created</th><th aria-label="Actions" /></tr></thead>
+              <thead><tr><th>{t("Role")}</th><th>{t("Restriction")}</th><th>{t("Uses")}</th><th>{t("Status")}</th><th>{t("Expires")}</th><th>{t("Created")}</th><th aria-label={t("Actions")} /></tr></thead>
               <tbody>
                 {invites.data?.data.map((i: any) => (
                   <tr key={i.id}>
                     <td><strong>{PROJECT_ROLE_LABEL[i.role as ProjectRole]}</strong></td>
-                    <td className="muted">{i.email ?? (i.allowedDomain ? `@${i.allowedDomain}` : 'Anyone with the link')}</td>
+                    <td className="muted">{i.email ?? (i.allowedDomain ? `@${i.allowedDomain}` : t("Anyone with the link"))}</td>
                     <td className="muted">{i.useCount}/{i.maxUses}</td>
                     <td><InviteStatus status={i.status} /></td>
                     <td className="muted" title={fullDate(i.expiresAt)}>{timeAgo(i.expiresAt)}</td>
                     <td className="muted">{i.createdBy?.displayName}<div className="subtle">{timeAgo(i.createdAt)}</div></td>
                     <td style={{ textAlign: 'right' }}>
-                      {i.status === 'active' && <button className="btn ghost sm" onClick={() => run(() => api(`/invitations/${i.id}/revoke`, { method: 'POST' }), 'Invitation revoked')}><Ban size={14} /> Revoke</button>}
+                      {i.status === 'active' && <button className="btn ghost sm" onClick={() => run(() => api(`/invitations/${i.id}/revoke`, { method: 'POST' }), t("Invitation revoked"))}><Ban size={14} />{' '}{t("Revoke")}</button>}
                     </td>
                   </tr>
                 ))}
@@ -220,17 +221,15 @@ export function MembersPage() {
       <InviteModal open={inviting} onClose={() => setInviting(false)} endpoint={`/projects/${p.id}/invitations`} scopeName={p.name}
         roles={ROLES.map((r) => ({ value: r, label: PROJECT_ROLE_LABEL[r], hint: PROJECT_ROLE_HINT[r] }))} defaultRole="member" onCreated={refresh} />
       <AddMemberModal open={adding} onClose={() => setAdding(false)} onAdded={refresh} />
-      <ConfirmDialog open={Boolean(removing)} title={`Remove ${removing?.displayName}?`} confirmLabel="Remove access" danger onClose={() => setRemoving(null)}
-        onConfirm={() => { const m = removing; setRemoving(null); run(() => api(`/projects/${p.id}/members/${m.userId}`, { method: 'DELETE' }), `${m.displayName} removed`); }}>
-        They lose access to this project's knowledge and files immediately. Their contributions stay.
-      </ConfirmDialog>
+      <ConfirmDialog open={Boolean(removing)} title={t('Remove {name}?', { name: removing?.displayName ?? '' })} confirmLabel={t("Remove access")} danger onClose={() => setRemoving(null)}
+        onConfirm={() => { const m = removing; setRemoving(null); run(() => api(`/projects/${p.id}/members/${m.userId}`, { method: 'DELETE' }), t('{name} removed', { name: m.displayName })); }}>{t("They lose access to this project's knowledge and files immediately. Their contributions stay.")}</ConfirmDialog>
     </div>
   );
 }
 
 function AddMemberModal({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: () => void }) {
   return (
-    <Modal open={open} onClose={onClose} title="Add people from your organization">
+    <Modal open={open} onClose={onClose} title={t("Add people from your organization")}>
       {open && <AddMemberForm onClose={onClose} onAdded={onAdded} />}
     </Modal>
   );
@@ -250,8 +249,8 @@ function AddMemberForm({ onClose, onAdded }: { onClose: () => void; onAdded: () 
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setQ(text.trim()), 200);
-    return () => clearTimeout(t);
+    const entry = setTimeout(() => setQ(text.trim()), 200);
+    return () => clearTimeout(entry);
   }, [text]);
   const res = useQuery({
     queryKey: ['member-candidates', p.id, q],
@@ -277,7 +276,7 @@ function AddMemberForm({ onClose, onAdded }: { onClose: () => void; onAdded: () 
       await api(`/projects/${p.id}/members`, { body: { userIds: [...picked.keys()], role } });
       onAdded();
       const names = [...picked.values()].map((c) => c.displayName);
-      toast(names.length === 1 ? `${names[0]} added as ${PROJECT_ROLE_LABEL[role]}` : `${names.length} people added as ${PROJECT_ROLE_LABEL[role]}`);
+      toast(names.length === 1 ? t('{name} added as {role}', { name: names[0]!, role: PROJECT_ROLE_LABEL[role] }) : t('{n} people added as {role}', { n: names.length, role: PROJECT_ROLE_LABEL[role] }));
       onClose();
     } catch (err) {
       setError(err);
@@ -296,8 +295,8 @@ function AddMemberForm({ onClose, onAdded }: { onClose: () => void; onAdded: () 
           type="search"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Search by name or email"
-          aria-label="Search organization members"
+          placeholder={t("Search by name or email")}
+          aria-label={t("Search organization members")}
           aria-controls="candidate-list"
           autoFocus
           onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
@@ -305,17 +304,17 @@ function AddMemberForm({ onClose, onAdded }: { onClose: () => void; onAdded: () 
       </div>
 
       {picked.size > 0 && (
-        <div className="row wrap" style={{ gap: 6 }} aria-label="Selected people">
+        <div className="row wrap" style={{ gap: 6 }} aria-label={t("Selected people")}>
           {[...picked.values()].map((c) => (
             <span key={c.id} className="tag">
               {c.displayName}
-              <button type="button" className="tag-x" onClick={() => toggle(c)} aria-label={`Remove ${c.displayName}`}><X size={12} /></button>
+              <button type="button" className="tag-x" onClick={() => toggle(c)} aria-label={t('Remove {name}', { name: c.displayName })}><X size={12} /></button>
             </span>
           ))}
         </div>
       )}
 
-      <div className="picker" id="candidate-list" role="group" aria-label="Organization members" aria-busy={res.isFetching}>
+      <div className="picker" id="candidate-list" role="group" aria-label={t("Organization members")} aria-busy={res.isFetching}>
         {res.isLoading ? (
           [0, 1, 2, 3].map((i) => (
             <div key={i} className="picker-row" aria-hidden="true">
@@ -325,7 +324,7 @@ function AddMemberForm({ onClose, onAdded }: { onClose: () => void; onAdded: () 
           ))
         ) : list.length === 0 ? (
           <div className="picker-empty">
-            {q ? <>No one in {p.tenant.name} matches “{q}”. To add someone new, use <strong>Invite with link</strong>.</> : <>Everyone in {p.tenant.name} is already on this project.</>}
+            {q ? <>{t("No one in")}{' '}{p.tenant.name}{' '}{t("matches “")}{q}{t("”. To add someone new, use")}{' '}<strong>{t("Invite with link")}</strong>.</> : <>{t("Everyone in")}{' '}{p.tenant.name}{' '}{t("is already on this project.")}</>}
           </div>
         ) : (
           list.map((c) => {
@@ -345,15 +344,15 @@ function AddMemberForm({ onClose, onAdded }: { onClose: () => void; onAdded: () 
         )}
       </div>
 
-      <Field label="Project role" htmlFor="ar" hint={PROJECT_ROLE_HINT[role]}>
+      <Field label={t("Project role")} htmlFor="ar" hint={PROJECT_ROLE_HINT[role]}>
         <select id="ar" className="select" value={role} onChange={(e) => setRole(e.target.value as ProjectRole)}>{ROLES.map((r) => <option key={r} value={r}>{PROJECT_ROLE_LABEL[r]}</option>)}</select>
       </Field>
       <div className="row">
-        <span className="subtle">{picked.size ? `${picked.size} selected` : 'Select one or more people'}</span>
+        <span className="subtle">{picked.size ? t('{n} selected', { n: picked.size }) : t("Select one or more people")}</span>
         <span className="spacer" />
-        <button type="button" className="btn" onClick={onClose}>Cancel</button>
+        <button type="button" className="btn" onClick={onClose}>{t("Cancel")}</button>
         <button className="btn primary" disabled={busy || picked.size === 0}>
-          {busy ? <Spinner /> : picked.size > 1 ? `Add ${picked.size} people` : 'Add to project'}
+          {busy ? <Spinner /> : picked.size > 1 ? t('Add {n} people', { n: picked.size }) : t("Add to project")}
         </button>
       </div>
     </form>

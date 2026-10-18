@@ -4,12 +4,13 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import { BrandMark } from './ui';
+import { t } from '../lib/i18n';
 
 export function Skel({ w = '100%', h = 12, r, style }: { w?: number | string; h?: number | string; r?: number | string; style?: CSSProperties }) {
   return <span className="skeleton" style={{ display: 'block', width: w, height: h, borderRadius: r, ...style }} />;
 }
 
-function Region({ label = 'Loading', children, style }: { label?: string; children: ReactNode; style?: CSSProperties }) {
+function Region({ label = t('Loading'), children, style }: { label?: string; children: ReactNode; style?: CSSProperties }) {
   return (
     <div role="status" aria-label={label} aria-busy="true" style={style}>
       {children}
@@ -20,7 +21,7 @@ function Region({ label = 'Loading', children, style }: { label?: string; childr
 /** Full-window splash while the session is resolved. Matches the static one in index.html. */
 export function AppSplash() {
   return (
-    <div className="boot" role="status" aria-label="Loading Tavern">
+    <div className="boot" role="status" aria-label={t("Loading Tavern")}>
       <BrandMark size={40} />
       <div className="boot-bar"><span /></div>
     </div>
@@ -65,7 +66,7 @@ export function TileSkeleton() {
 
 export function TileGridSkeleton({ n = 3 }: { n?: number }) {
   return (
-    <Region label="Loading cards">
+    <Region label={t("Loading cards")}>
       <div className="grid-3">{Array.from({ length: n }, (_, i) => <TileSkeleton key={i} />)}</div>
     </Region>
   );
@@ -74,7 +75,7 @@ export function TileGridSkeleton({ n = 3 }: { n?: number }) {
 export function TableSkeleton({ rows = 5, cols = 4, avatar = true }: { rows?: number; cols?: number; avatar?: boolean }) {
   const widths = ['70%', '50%', '40%', '55%', '35%'];
   return (
-    <Region label="Loading table">
+    <Region label={t("Loading table")}>
       <div className="card table-wrap">
         <table className="table">
           <thead>
@@ -106,7 +107,7 @@ export function TableSkeleton({ rows = 5, cols = 4, avatar = true }: { rows?: nu
 
 export function ChecklistSkeleton({ steps = 4 }: { steps?: number }) {
   return (
-    <Region label="Loading checklist">
+    <Region label={t("Loading checklist")}>
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="card-pad stack" style={{ gap: 10 }}><Skel w={220} h={14} /><Skel h={6} r={999} /></div>
       </div>
@@ -129,7 +130,7 @@ export function ChecklistSkeleton({ steps = 4 }: { steps?: number }) {
 /** Two-column knowledge item page: header, actions, body, metadata panel. */
 export function DetailSkeleton() {
   return (
-    <Region label="Loading item">
+    <Region label={t("Loading item")}>
       <Skel w={100} h={12} style={{ marginBottom: 20 }} />
       <div className="grid-2" style={{ gridTemplateColumns: 'minmax(0, 1fr) 300px', alignItems: 'start', gap: 28 }}>
         <div className="stack" style={{ gap: 14 }}>
@@ -162,7 +163,7 @@ export function DocSkeleton() {
 
 export function FormSkeleton({ fields = 3 }: { fields?: number }) {
   return (
-    <Region label="Loading form">
+    <Region label={t("Loading form")}>
       <div className="card card-pad stack" style={{ gap: 18 }}>
         <Skel w={160} h={16} />
         {Array.from({ length: fields }, (_, i) => <div key={i} className="stack" style={{ gap: 8 }}><Skel w={90} h={11} /><Skel h={32} r={6} /></div>)}
@@ -176,7 +177,7 @@ export function FormSkeleton({ fields = 3 }: { fields?: number }) {
 export function ProjectSkeleton() {
   return (
     <div className="content">
-      <Region label="Loading project">
+      <Region label={t("Loading project")}>
         <div className="page-head" style={{ marginBottom: 16 }}>
           <div className="stack" style={{ gap: 10 }}>
             <Skel w={170} h={10} />

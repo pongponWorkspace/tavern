@@ -8,6 +8,7 @@ import { AuthLayout } from './auth';
 import { Alert, ErrorAlert, Spinner } from '../components/ui';
 import { AppSplash } from '../components/Skeletons';
 import { fullDate } from '../lib/format';
+import { t } from '../lib/i18n';
 
 export function AcceptInvite() {
   const { token = '' } = useParams();
@@ -40,28 +41,28 @@ export function AcceptInvite() {
     <AuthLayout>
       {!p?.valid ? (
         <div className="form">
-          <h1>Invitation unavailable</h1>
-          <Alert tone="warn">{p?.message ?? 'This invitation link is no longer valid.'}</Alert>
-          <Link to="/" className="btn block">Go to Tavern</Link>
+          <h1>{t("Invitation unavailable")}</h1>
+          <Alert tone="warn">{p?.message ?? t("This invitation link is no longer valid.")}</Alert>
+          <Link to="/" className="btn block">{t("Go to Tavern")}</Link>
         </div>
       ) : (
         <div className="form">
           <div className="empty-icon" style={{ marginBottom: 4 }}><MailCheck size={22} /></div>
-          <h1>Join {p.projectName ?? p.tenantName}</h1>
+          <h1>{t("Join")}{' '}{p.projectName ?? p.tenantName}</h1>
           <p className="muted">
-            <strong>{p.invitedBy}</strong> invited you to {p.projectName ? <>the <strong>{p.projectName}</strong> project in <strong>{p.tenantName}</strong></> : <strong>{p.tenantName}</strong>} as <strong>{p.roleLabel}</strong>.
+            <strong>{p.invitedBy}</strong>{' '}{t("invited you to")}{' '}{p.projectName ? <>{t("the")}{' '}<strong>{p.projectName}</strong>{' '}{t("project in")}{' '}<strong>{p.tenantName}</strong></> : <strong>{p.tenantName}</strong>}{' '}{t("as")}{' '}<strong>{p.roleLabel}</strong>.
           </p>
-          <p className="subtle">Link expires {fullDate(p.expiresAt)}.{p.emailRestricted && ' This invitation is for a specific email address.'}</p>
+          <p className="subtle">{t("Link expires")}{' '}{fullDate(p.expiresAt)}.{p.emailRestricted && t(" This invitation is for a specific email address.")}</p>
           <ErrorAlert error={error} />
           {me.data ? (
             <>
-              <button className="btn primary block" onClick={accept} disabled={busy}>{busy ? <Spinner /> : 'Accept invitation'}</button>
-              <p className="subtle" style={{ textAlign: 'center' }}>Signed in as {me.data.user.email}</p>
+              <button className="btn primary block" onClick={accept} disabled={busy}>{busy ? <Spinner /> : t("Accept invitation")}</button>
+              <p className="subtle" style={{ textAlign: 'center' }}>{t("Signed in as")}{' '}{me.data.user.email}</p>
             </>
           ) : (
             <>
-              <Link className="btn primary block" to={`/register?next=${encodeURIComponent(here)}`}>Create an account to accept</Link>
-              <Link className="btn block" to={`/login?next=${encodeURIComponent(here)}`}>I already have an account</Link>
+              <Link className="btn primary block" to={`/register?next=${encodeURIComponent(here)}`}>{t("Create an account to accept")}</Link>
+              <Link className="btn block" to={`/login?next=${encodeURIComponent(here)}`}>{t("I already have an account")}</Link>
             </>
           )}
         </div>

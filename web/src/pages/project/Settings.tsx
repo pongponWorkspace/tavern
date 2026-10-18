@@ -7,6 +7,7 @@ import { ConfirmDialog, ErrorAlert, Field, Spinner, errorText, useToast } from '
 import { OnboardingStepsEditor } from './Onboarding';
 import { useProject } from './ProjectLayout';
 import { useTenantPerms } from '../../lib/session';
+import { t } from '../../lib/i18n';
 
 export function ProjectSettings() {
   const p = useProject();
@@ -24,7 +25,7 @@ export function ProjectSettings() {
     try {
       await api(`/projects/${p.id}`, { method: 'PATCH', body: { version: p.version, ...body } });
       await qc.invalidateQueries();
-      toast('Settings saved');
+      toast(t("Settings saved"));
     } catch (e) {
       setError(e);
     } finally {
@@ -36,7 +37,7 @@ export function ProjectSettings() {
     try {
       await api(`/projects/${p.id}/${to}`, { method: 'POST' });
       await qc.invalidateQueries();
-      toast(to === 'archive' ? 'Project archived' : 'Project restored');
+      toast(to === 'archive' ? t("Project archived") : t("Project restored"));
     } catch (e) {
       toast(errorText(e), 'error');
     } finally {
@@ -57,19 +58,19 @@ export function ProjectSettings() {
     <div className="stack" style={{ gap: 24, maxWidth: 860 }}>
       <ErrorAlert error={error} />
       {isAdmin && <form className="card card-pad form" onSubmit={(e: FormEvent) => { e.preventDefault(); save({ ...form, ownerUserId: form.ownerUserId || null }, 'details'); }}>
-        <h2>Project details</h2>
-        <Field label="Name" htmlFor="sn"><input id="sn" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={ro} /></Field>
-        <Field label="Description" htmlFor="sd"><textarea id="sd" className="textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} disabled={ro} /></Field>
+        <h2>{t("Project details")}</h2>
+        <Field label={t("Name")} htmlFor="sn"><input id="sn" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={ro} /></Field>
+        <Field label={t("Description")} htmlFor="sd"><textarea id="sd" className="textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} disabled={ro} /></Field>
         <div className="form-row">
-          <Field label="Contact" htmlFor="sc"><input id="sc" className="input" value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} disabled={ro} /></Field>
-          <Field label="Project owner" htmlFor="so">
+          <Field label={t("Contact")} htmlFor="sc"><input id="sc" className="input" value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} disabled={ro} /></Field>
+          <Field label={t("Project owner")} htmlFor="so">
             <select id="so" className="select" value={form.ownerUserId} onChange={(e) => setForm({ ...form, ownerUserId: e.target.value })} disabled={ro}>
-              <option value="">No owner</option>
+              <option value="">{t("No owner")}</option>
               {people.data?.data.map((u: any) => <option key={u.id} value={u.id}>{u.displayName}</option>)}
             </select>
           </Field>
         </div>
-        <div className="row"><span className="spacer" /><button className="btn primary" disabled={ro || busy !== null || form.name.trim().length < 2}>{busy === 'details' ? <Spinner /> : 'Save details'}</button></div>
+        <div className="row"><span className="spacer" /><button className="btn primary" disabled={ro || busy !== null || form.name.trim().length < 2}>{busy === 'details' ? <Spinner /> : t("Save details")}</button></div>
       </form>}
 
       {canOnboard && (
@@ -81,22 +82,20 @@ export function ProjectSettings() {
       {isAdmin && tenantPerms.createProject && <DuplicateProject />}
 
       {isAdmin && <div className="card card-pad form" style={{ borderColor: 'var(--color-danger-muted)' }}>
-        <h2>{p.status === 'archived' ? 'Restore project' : 'Archive project'}</h2>
+        <h2>{p.status === 'archived' ? t("Restore project") : t("Archive project")}</h2>
         {p.status === 'archived' ? (
           <>
-            <p className="muted">Makes the project editable again.</p>
-            <div><button className="btn" onClick={() => setStatus('restore')} disabled={busy !== null}><ArchiveRestore size={15} /> Restore project</button></div>
+            <p className="muted">{t("Makes the project editable again.")}</p>
+            <div><button className="btn" onClick={() => setStatus('restore')} disabled={busy !== null}><ArchiveRestore size={15} />{' '}{t("Restore project")}</button></div>
           </>
         ) : (
           <>
-            <p className="muted">Makes the project read-only. Nothing is deleted.</p>
-            <div><button className="btn danger" onClick={() => setConfirmArchive(true)} disabled={busy !== null}><Archive size={15} /> Archive project</button></div>
+            <p className="muted">{t("Makes the project read-only. Nothing is deleted.")}</p>
+            <div><button className="btn danger" onClick={() => setConfirmArchive(true)} disabled={busy !== null}><Archive size={15} />{' '}{t("Archive project")}</button></div>
           </>
         )}
       </div>}
-      <ConfirmDialog open={confirmArchive} title={`Archive ${p.name}?`} confirmLabel="Archive project" danger busy={busy === 'archive'} onClose={() => setConfirmArchive(false)} onConfirm={() => setStatus('archive')}>
-        Everything becomes read-only until a Project Admin restores it.
-      </ConfirmDialog>
+      <ConfirmDialog open={confirmArchive} title={t('Archive {name}?', { name: p.name })} confirmLabel={t("Archive project")} danger busy={busy === 'archive'} onClose={() => setConfirmArchive(false)} onConfirm={() => setStatus('archive')}>{t("Everything becomes read-only until a Project Admin restores it.")}</ConfirmDialog>
     </div>
   );
 }
@@ -117,7 +116,7 @@ function DuplicateProject() {
     try {
       const r = await api(`/projects/${p.id}/duplicate`, { body: { name, includeContent } });
       await qc.invalidateQueries();
-      toast('Project duplicated');
+      toast(t("Project duplicated"));
       navigate(`/p/${r.id}`);
     } catch (err) {
       setError(err);
@@ -127,12 +126,12 @@ function DuplicateProject() {
   };
   return (
     <form className="card card-pad form" onSubmit={submit}>
-      <h2>Duplicate project</h2>
+      <h2>{t("Duplicate project")}</h2>
       <ErrorAlert error={error} />
-      <Field label="New project name" htmlFor="dn"><input id="dn" className="input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
-      <label className="check"><input type="checkbox" checked={includeContent} onChange={(e) => setIncludeContent(e.target.checked)} /> Copy links and documents</label>
-      <p className="subtle">Members and uploaded files aren't copied.</p>
-      <div className="row"><span className="spacer" /><button className="btn" disabled={busy || name.trim().length < 2}>{busy ? <Spinner /> : <><Copy size={15} /> Duplicate</>}</button></div>
+      <Field label={t("New project name")} htmlFor="dn"><input id="dn" className="input" value={name} onChange={(e) => setName(e.target.value)} /></Field>
+      <label className="check"><input type="checkbox" checked={includeContent} onChange={(e) => setIncludeContent(e.target.checked)} />{' '}{t("Copy links and documents")}</label>
+      <p className="subtle">{t("Members and uploaded files aren't copied.")}</p>
+      <div className="row"><span className="spacer" /><button className="btn" disabled={busy || name.trim().length < 2}>{busy ? <Spinner /> : <><Copy size={15} />{' '}{t("Duplicate")}</>}</button></div>
     </form>
   );
 }

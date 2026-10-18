@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from 'react';
 import { Check, Lock, Minus } from 'lucide-react';
+import { t } from '../lib/i18n';
 
 export interface MatrixColumn {
   key: string;
@@ -26,14 +27,14 @@ export interface MatrixRow {
 
 type Value = boolean | 'none' | 'own' | 'all';
 
-const SCOPE_LABEL = { none: 'None', own: 'Own items', all: 'All items' } as const;
+const SCOPE_LABEL = { get none() { return t('None'); }, get own() { return t('Own items'); }, get all() { return t('All items'); } };
 
 function Yes({ title }: { title?: string }) {
-  return <span className="rm-yes" title={title} aria-label={title ?? 'Allowed'}><Check size={15} /></span>;
+  return <span className="rm-yes" title={title} aria-label={title ?? t("Allowed")}><Check size={15} /></span>;
 }
 function Locked({ reason, on }: { reason: string; on?: boolean }) {
   return (
-    <span className={`rm-locked ${on ? 'on' : ''}`} title={reason} aria-label={`${on ? 'Always allowed' : 'Not available'}: ${reason}`}>
+    <span className={`rm-locked ${on ? 'on' : ''}`} title={reason} aria-label={`${on ? t('Always allowed') : t('Not available')}: ${reason}`}>
       {on ? <Check size={14} /> : <Minus size={14} />}
       <Lock size={11} />
     </span>
@@ -62,11 +63,11 @@ export function RoleMatrix({ columns, rows, value, onChange, readOnly, caption, 
         <caption className="visually-hidden">{caption}</caption>
         <thead>
           <tr>
-            <th scope="col">Capability</th>
+            <th scope="col">{t("Capability")}</th>
             {columns.map((c) => (
               <th key={c.key} scope="col" className={`rm-col ${c.key === highlight ? 'rm-you' : ''}`}>
                 {c.header}
-                {c.key === highlight && <span className="rm-you-label">You</span>}
+                {c.key === highlight && <span className="rm-you-label">{t("You")}</span>}
               </th>
             ))}
           </tr>
@@ -84,7 +85,7 @@ export function RoleMatrix({ columns, rows, value, onChange, readOnly, caption, 
                   {columns.map((c) => {
                     let cell: ReactNode;
                     if (r.everyone) cell = <Locked on reason={r.everyone} />;
-                    else if (c.full) cell = r.kind === 'scope' ? <span className="rm-scope-fixed">{SCOPE_LABEL.all}</span> : <Yes title="Always allowed" />;
+                    else if (c.full) cell = r.kind === 'scope' ? <span className="rm-scope-fixed">{SCOPE_LABEL.all}</span> : <Yes title={t("Always allowed")} />;
                     else if (r.fullOnly) cell = <Locked reason={r.fullOnly} />;
                     else if (r.lockedFor?.[c.key]) cell = <Locked reason={r.lockedFor[c.key]} />;
                     else {
@@ -100,7 +101,7 @@ export function RoleMatrix({ columns, rows, value, onChange, readOnly, caption, 
                         );
                       } else {
                         cell = readOnly ? (
-                          v ? <Yes /> : <span className="rm-no" aria-label="Not allowed"><Minus size={14} /></span>
+                          v ? <Yes /> : <span className="rm-no" aria-label={t("Not allowed")}><Minus size={14} /></span>
                         ) : (
                           <input type="checkbox" className="rm-check" checked={Boolean(v)} aria-label={name} onChange={(e) => onChange?.(c.key, r.key, e.target.checked)} />
                         );

@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Check, Plus, Trash2 } from 'lucide-react';
 import { api } from '../api';
+import { LanguageSwitch } from '../lib/i18n';
 import { useMe } from '../lib/session';
 import { BrandMark, ErrorAlert, Field, Spinner } from '../components/ui';
+import { t } from '../lib/i18n';
 
 const STEPS = ['Organization', 'Workspace', 'Project', 'Starter links'];
 
@@ -18,7 +20,7 @@ export function Setup() {
   const [error, setError] = useState<unknown>(null);
   const [ids, setIds] = useState<{ tenant?: string; workspace?: string; project?: string }>({});
   const [org, setOrg] = useState('');
-  const [ws, setWs] = useState('General');
+  const [ws, setWs] = useState(() => t('General'));
   const [proj, setProj] = useState({ name: '', description: '' });
   const [links, setLinks] = useState([{ title: '', url: '' }, { title: '', url: '' }]);
 
@@ -37,8 +39,8 @@ export function Setup() {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (step === 0) run(async () => {
-      const t = await api('/tenants', { body: { name: org } });
-      setIds({ tenant: t.id });
+      const entry = await api('/tenants', { body: { name: org } });
+      setIds({ tenant: entry.id });
       await qc.invalidateQueries({ queryKey: ['me'] });
       setStep(1);
     });
@@ -53,7 +55,7 @@ export function Setup() {
       setStep(3);
     });
     if (step === 3) run(async () => {
-      const cat = await api(`/projects/${ids.project}/categories`, { body: { name: 'Getting started' } });
+      const cat = await api(`/projects/${ids.project}/categories`, { body: { name: t('Getting started') } });
       for (const l of links.filter((l) => l.title.trim() && l.url.trim())) {
         await api(`/projects/${ids.project}/knowledge`, { body: { type: 'external_link', title: l.title, externalUrl: l.url, categoryId: cat.id, isPinned: true } });
       }
@@ -69,16 +71,17 @@ export function Setup() {
       <div style={{ width: '100%', maxWidth: 560 }}>
         <div className="row" style={{ marginBottom: 28 }}>
           <BrandMark />
-          <strong style={{ fontSize: 18, letterSpacing: '-0.015em' }}>Tavern</strong>
+          <strong style={{ fontSize: 18, letterSpacing: '-0.015em' }}>{t("Tavern")}</strong>
           <span className="spacer" />
-          {me.data && me.data.tenants.length > 0 && step === 0 && <Link to="/" className="btn ghost sm">Cancel</Link>}
+          <LanguageSwitch />
+          {me.data && me.data.tenants.length > 0 && step === 0 && <Link to="/" className="btn ghost sm">{t("Cancel")}</Link>}
         </div>
-        <ol className="row" style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', gap: 6 }} aria-label="Setup progress">
+        <ol className="row" style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', gap: 6 }} aria-label={t("Setup progress")}>
           {STEPS.map((s, i) => (
             <li key={s} style={{ flex: 1 }} aria-current={i === step ? 'step' : undefined}>
               <div className="progress" style={{ height: 4 }}><span style={{ width: i <= step ? '100%' : '0%' }} /></div>
               <div className="subtle" style={{ marginTop: 6, fontSize: 12, color: i === step ? 'var(--color-fg)' : undefined, fontWeight: i === step ? 600 : 400 }}>
-                {i < step && <Check size={12} style={{ verticalAlign: -1 }} />} {s}
+                {i < step && <Check size={12} style={{ verticalAlign: -1 }} />} {t(s)}
               </div>
             </li>
           ))}
@@ -86,43 +89,43 @@ export function Setup() {
         <form className="card card-pad form" onSubmit={submit}>
           {step === 0 && (
             <>
-              <div><h1>Create your organization</h1></div>
-              <Field label="Organization name" htmlFor="org"><input id="org" className="input" value={org} onChange={(e) => setOrg(e.target.value)} placeholder="Acme Studio" autoFocus /></Field>
+              <div><h1>{t("Create your organization")}</h1></div>
+              <Field label={t("Organization name")} htmlFor="org"><input id="org" className="input" value={org} onChange={(e) => setOrg(e.target.value)} placeholder={t("Acme Studio")} autoFocus /></Field>
             </>
           )}
           {step === 1 && (
             <>
-              <div><h1>Add a workspace</h1><p className="muted" style={{ marginTop: 6 }}>Group projects by product, team or client.</p></div>
-              <Field label="Workspace name" htmlFor="ws"><input id="ws" className="input" value={ws} onChange={(e) => setWs(e.target.value)} autoFocus /></Field>
+              <div><h1>{t("Add a workspace")}</h1><p className="muted" style={{ marginTop: 6 }}>{t("Group projects by product, team or client.")}</p></div>
+              <Field label={t("Workspace name")} htmlFor="ws"><input id="ws" className="input" value={ws} onChange={(e) => setWs(e.target.value)} autoFocus /></Field>
             </>
           )}
           {step === 2 && (
             <>
-              <div><h1>Create your first project</h1></div>
-              <Field label="Project name" htmlFor="pn"><input id="pn" className="input" value={proj.name} onChange={(e) => setProj({ ...proj, name: e.target.value })} placeholder="Atlas Mobile App" autoFocus /></Field>
-              <Field label="Description" htmlFor="pd" hint="Optional"><textarea id="pd" className="textarea" value={proj.description} onChange={(e) => setProj({ ...proj, description: e.target.value })} /></Field>
+              <div><h1>{t("Create your first project")}</h1></div>
+              <Field label={t("Project name")} htmlFor="pn"><input id="pn" className="input" value={proj.name} onChange={(e) => setProj({ ...proj, name: e.target.value })} placeholder={t("Atlas Mobile App")} autoFocus /></Field>
+              <Field label={t("Description")} htmlFor="pd" hint={t("Optional")}><textarea id="pd" className="textarea" value={proj.description} onChange={(e) => setProj({ ...proj, description: e.target.value })} /></Field>
             </>
           )}
           {step === 3 && (
             <>
-              <div><h1>Add a few key links</h1><p className="muted" style={{ marginTop: 6 }}>Pinned on the project page. Optional.</p></div>
+              <div><h1>{t("Add a few key links")}</h1><p className="muted" style={{ marginTop: 6 }}>{t("Pinned on the project page. Optional.")}</p></div>
               {links.map((l, i) => (
                 <div key={i} className="row" style={{ alignItems: 'flex-end' }}>
-                  <Field label={i === 0 ? 'Title' : ''} htmlFor={`lt${i}`}><input id={`lt${i}`} className="input" value={l.title} placeholder="Figma design file" onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} /></Field>
+                  <Field label={i === 0 ? t("Title") : ''} htmlFor={`lt${i}`}><input id={`lt${i}`} className="input" value={l.title} placeholder={t("Figma design file")} onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} /></Field>
                   <div style={{ flex: 1.4 }}>
-                    <Field label={i === 0 ? 'URL' : ''} htmlFor={`lu${i}`}><input id={`lu${i}`} className="input" value={l.url} placeholder="https://" onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))} /></Field>
+                    <Field label={i === 0 ? t("URL") : ''} htmlFor={`lu${i}`}><input id={`lu${i}`} className="input" value={l.url} placeholder="https://" onChange={(e) => setLinks(links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))} /></Field>
                   </div>
-                  <button type="button" className="btn ghost icon" aria-label="Remove link" onClick={() => setLinks(links.filter((_, j) => j !== i))}><Trash2 size={16} /></button>
+                  <button type="button" className="btn ghost icon" aria-label={t("Remove link")} onClick={() => setLinks(links.filter((_, j) => j !== i))}><Trash2 size={16} /></button>
                 </div>
               ))}
-              {links.length < 6 && <button type="button" className="btn ghost sm" style={{ alignSelf: 'flex-start' }} onClick={() => setLinks([...links, { title: '', url: '' }])}><Plus size={15} /> Add another</button>}
+              {links.length < 6 && <button type="button" className="btn ghost sm" style={{ alignSelf: 'flex-start' }} onClick={() => setLinks([...links, { title: '', url: '' }])}><Plus size={15} />{' '}{t("Add another")}</button>}
             </>
           )}
           <ErrorAlert error={error} />
           <div className="row">
             <span className="spacer" />
-            {step === 3 && <button type="button" className="btn ghost" onClick={() => navigate(`/p/${ids.project}`)} disabled={busy}>Skip for now</button>}
-            <button className="btn primary" disabled={busy || !valid}>{busy ? <Spinner /> : step === 3 ? 'Finish setup' : 'Continue'}</button>
+            {step === 3 && <button type="button" className="btn ghost" onClick={() => navigate(`/p/${ids.project}`)} disabled={busy}>{t("Skip for now")}</button>}
+            <button className="btn primary" disabled={busy || !valid}>{busy ? <Spinner /> : step === 3 ? t("Finish setup") : t("Continue")}</button>
           </div>
         </form>
       </div>

@@ -11,6 +11,7 @@ import { DetailSkeleton, DocSkeleton } from '../../components/Skeletons';
 import { NotFound } from '../NotFound';
 import { KnowledgeFormModal } from './KnowledgeForm';
 import { useProject } from './ProjectLayout';
+import { t } from '../../lib/i18n';
 
 export function ItemDetailPage() {
   const p = useProject();
@@ -70,9 +71,9 @@ export function ItemDetailPage() {
               <h1 style={{ fontSize: 26, overflowWrap: 'anywhere' }}>{item.title}</h1>
               <div className="row wrap" style={{ marginTop: 8, gap: 8 }}>
                 <span className="badge">{TYPE_LABEL[item.type]}</span>
-                {item.isPinned && <span className="badge accent"><Pin size={12} /> Pinned</span>}
-                {item.status === 'archived' && <span className="badge warn"><Archive size={12} /> Archived {timeAgo(item.archivedAt)}</span>}
-                {item.access?.restricted && <span className="badge warn"><Lock size={12} /> Restricted</span>}
+                {item.isPinned && <span className="badge accent"><Pin size={12} />{' '}{t("Pinned")}</span>}
+                {item.status === 'archived' && <span className="badge warn"><Archive size={12} />{' '}{t("Archived")}{' '}{timeAgo(item.archivedAt)}</span>}
+                {item.access?.restricted && <span className="badge warn"><Lock size={12} />{' '}{t("Restricted")}</span>}
                 {item.file && <ScanBadge status={item.file.scanStatus} />}
               </div>
             </div>
@@ -84,57 +85,54 @@ export function ItemDetailPage() {
             {item.type === 'external_link' && item.externalUrl && <OpenLink href={item.externalUrl} />}
             {item.type === 'uploaded_file' && item.file && (
               <>
-                <button className="btn primary" onClick={() => openFile('attachment')} disabled={item.file.scanStatus !== 'clean'}><Download size={15} /> Download</button>
-                {previewable && <button className="btn" onClick={() => openFile('inline')}><Eye size={15} /> Preview</button>}
+                <button className="btn primary" onClick={() => openFile('attachment')} disabled={item.file.scanStatus !== 'clean'}><Download size={15} />{' '}{t("Download")}</button>
+                {previewable && <button className="btn" onClick={() => openFile('inline')}><Eye size={15} />{' '}{t("Preview")}</button>}
               </>
             )}
-            {item.permissions.edit && item.status === 'active' && <button className="btn" onClick={() => setEditing(true)}><Pencil size={15} /> Edit details</button>}
+            {item.permissions.edit && item.status === 'active' && <button className="btn" onClick={() => setEditing(true)}><Pencil size={15} />{' '}{t("Edit details")}</button>}
             {item.permissions.pin && item.status === 'active' && (
-              <button className="btn" disabled={busy} onClick={() => act(() => api(`/knowledge/${item.id}/pin`, { method: item.isPinned ? 'DELETE' : 'POST' }), item.isPinned ? 'Unpinned' : 'Pinned to overview')}>
-                {item.isPinned ? <><PinOff size={15} /> Unpin</> : <><Pin size={15} /> Pin</>}
+              <button className="btn" disabled={busy} onClick={() => act(() => api(`/knowledge/${item.id}/pin`, { method: item.isPinned ? 'DELETE' : 'POST' }), item.isPinned ? t("Unpinned") : t("Pinned to overview"))}>
+                {item.isPinned ? <><PinOff size={15} />{' '}{t("Unpin")}</> : <><Pin size={15} />{' '}{t("Pin")}</>}
               </button>
             )}
-            {item.permissions.archive && item.status === 'active' && <button className="btn" onClick={() => setConfirm('archive')}><Archive size={15} /> Archive</button>}
-            {item.permissions.archive && item.status === 'archived' && <button className="btn" disabled={busy} onClick={() => act(() => api(`/knowledge/${item.id}/restore`, { method: 'POST' }), 'Restored')}><ArchiveRestore size={15} /> Restore</button>}
-            {item.permissions.delete && item.status === 'archived' && <button className="btn danger" onClick={() => setConfirm('delete')}><Trash2 size={15} /> Delete permanently</button>}
+            {item.permissions.archive && item.status === 'active' && <button className="btn" onClick={() => setConfirm('archive')}><Archive size={15} />{' '}{t("Archive")}</button>}
+            {item.permissions.archive && item.status === 'archived' && <button className="btn" disabled={busy} onClick={() => act(() => api(`/knowledge/${item.id}/restore`, { method: 'POST' }), t("Restored"))}><ArchiveRestore size={15} />{' '}{t("Restore")}</button>}
+            {item.permissions.delete && item.status === 'archived' && <button className="btn danger" onClick={() => setConfirm('delete')}><Trash2 size={15} />{' '}{t("Delete permanently")}</button>}
           </div>
 
           {item.type === 'external_link' && (
             <p className="subtle" style={{ marginTop: 10, overflowWrap: 'anywhere' }}>{item.externalUrl}</p>
           )}
-          {item.file?.scanStatus === 'pending' && <div style={{ marginTop: 16 }}><Alert tone="info">This file is being scanned. Download becomes available when the check passes.</Alert></div>}
+          {item.file?.scanStatus === 'pending' && <div style={{ marginTop: 16 }}><Alert tone="info">{t("This file is being scanned. Download becomes available when the check passes.")}</Alert></div>}
           {(item.file?.scanStatus === 'quarantined' || item.file?.scanStatus === 'failed') && (
-            <div style={{ marginTop: 16 }}><Alert tone="danger" title={item.file.scanStatus === 'quarantined' ? 'Blocked by the security scan' : 'This file could not be checked'}>It can't be downloaded. Upload a different copy, or archive this item.</Alert></div>
+            <div style={{ marginTop: 16 }}><Alert tone="danger" title={item.file.scanStatus === 'quarantined' ? t("Blocked by the security scan") : t("This file could not be checked")}>{t("It can't be downloaded. Upload a different copy, or archive this item.")}</Alert></div>
           )}
 
           {item.type === 'internal_document' && <DocumentBody item={item} />}
         </article>
 
         <aside className="card card-pad stack" style={{ gap: 16, fontSize: 14 }}>
-          <Meta label="Owner">{item.owner ? <span className="row" style={{ gap: 8 }}><Avatar id={item.owner.id} name={item.owner.displayName} url={item.owner.avatarUrl} size="sm" />{item.owner.displayName}</span> : <span className="subtle">No owner</span>}</Meta>
-          <Meta label="Category">{item.category ? <Link to={`/p/${p.id}/knowledge?category=${item.category.id}`}>{item.category.name}</Link> : <span className="subtle">Uncategorized</span>}</Meta>
-          {item.tags.length > 0 && <Meta label="Tags"><div className="row wrap" style={{ gap: 6 }}>{item.tags.map((t) => <Link key={t} to={`/p/${p.id}/knowledge?tag=${encodeURIComponent(t.toLowerCase())}`} className="tag">{t}</Link>)}</div></Meta>}
-          {item.file && <Meta label="File">{item.file.name}<div className="subtle">{bytes(item.file.size)}{item.file.mimeType ? ` · ${item.file.mimeType}` : ''}</div></Meta>}
-          <Meta label="Last updated"><span title={fullDate(item.updatedAt)}>{timeAgo(item.updatedAt)}</span> by {item.updatedBy.displayName}</Meta>
-          <Meta label="Added"><span title={fullDate(item.createdAt)}>{timeAgo(item.createdAt)}</span> by {item.createdBy.displayName}</Meta>
+          <Meta label={t("Owner")}>{item.owner ? <span className="row" style={{ gap: 8 }}><Avatar id={item.owner.id} name={item.owner.displayName} url={item.owner.avatarUrl} size="sm" />{item.owner.displayName}</span> : <span className="subtle">{t("No owner")}</span>}</Meta>
+          <Meta label={t("Category")}>{item.category ? <Link to={`/p/${p.id}/knowledge?category=${item.category.id}`}>{item.category.name}</Link> : <span className="subtle">{t("Uncategorized")}</span>}</Meta>
+          {item.tags.length > 0 && <Meta label={t("Tags")}><div className="row wrap" style={{ gap: 6 }}>{item.tags.map((entry) => <Link key={entry} to={`/p/${p.id}/knowledge?tag=${encodeURIComponent(entry.toLowerCase())}`} className="tag">{entry}</Link>)}</div></Meta>}
+          {item.file && <Meta label={t("File")}>{item.file.name}<div className="subtle">{bytes(item.file.size)}{item.file.mimeType ? ` · ${item.file.mimeType}` : ''}</div></Meta>}
+          <Meta label={t("Last updated")}><span title={fullDate(item.updatedAt)}>{timeAgo(item.updatedAt)}</span>{' '}{t("by")}{' '}{item.updatedBy.displayName}</Meta>
+          <Meta label={t("Added")}><span title={fullDate(item.createdAt)}>{timeAgo(item.createdAt)}</span>{' '}{t("by")}{' '}{item.createdBy.displayName}</Meta>
           {item.access && (
-            <Meta label="Who can see this">
+            <Meta label={t("Who can see this")}>
               <span>{item.access.visibilityRoles.map((r) => PROJECT_ROLE_LABEL[r]).join(', ')}</span>
-              {item.access.restricted && <div className="subtle" style={{ marginTop: 4 }}><ShieldAlert size={12} style={{ verticalAlign: -1 }} /> Hidden from everyone else, including search.</div>}
+              {item.access.restricted && <div className="subtle" style={{ marginTop: 4 }}><ShieldAlert size={12} style={{ verticalAlign: -1 }} />{' '}{t("Hidden from everyone else, including search.")}</div>}
             </Meta>
           )}
         </aside>
       </div>
 
       <KnowledgeFormModal project={p} item={editing ? item : null} onClose={() => setEditing(false)} />
-      <ConfirmDialog open={confirm === 'archive'} title="Archive this item?" confirmLabel="Archive" busy={busy} onClose={() => setConfirm(null)}
-        onConfirm={() => act(() => api(`/knowledge/${item.id}/archive`, { method: 'POST' }), 'Archived')}>
-        It will disappear from lists and search. People who manage archived items can restore it later.
-      </ConfirmDialog>
-      <ConfirmDialog open={confirm === 'delete'} title="Delete permanently?" confirmLabel="Delete forever" danger busy={busy} onClose={() => setConfirm(null)}
-        onConfirm={() => act(() => api(`/knowledge/${item.id}`, { method: 'DELETE' }), 'Deleted permanently', () => navigate(`/p/${p.id}/knowledge?status=archived`))}>
-        <strong>{item.title}</strong>{item.file ? ' and its file' : ''} will be removed for everyone. This can't be undone.
-      </ConfirmDialog>
+      <ConfirmDialog open={confirm === 'archive'} title={t("Archive this item?")} confirmLabel={t("Archive")} busy={busy} onClose={() => setConfirm(null)}
+        onConfirm={() => act(() => api(`/knowledge/${item.id}/archive`, { method: 'POST' }), t("Archived"))}>{t("It will disappear from lists and search. People who manage archived items can restore it later.")}</ConfirmDialog>
+      <ConfirmDialog open={confirm === 'delete'} title={t("Delete permanently?")} confirmLabel={t("Delete forever")} danger busy={busy} onClose={() => setConfirm(null)}
+        onConfirm={() => act(() => api(`/knowledge/${item.id}`, { method: 'DELETE' }), t("Deleted permanently"), () => navigate(`/p/${p.id}/knowledge?status=archived`))}>
+        <strong>{item.title}</strong>{item.file ? t(" and its file") : ''}{' '}{t("will be removed for everyone. This can't be undone.")}</ConfirmDialog>
     </div>
   );
 }
@@ -166,7 +164,7 @@ function DocumentBody({ item }: { item: ItemDetail }) {
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
 
-  if (q.isLoading) return <div style={{ marginTop: 14 }} role="status" aria-label="Loading document"><DocSkeleton /></div>;
+  if (q.isLoading) return <div style={{ marginTop: 14 }} role="status" aria-label={t("Loading document")}><DocSkeleton /></div>;
   if (q.error) return <div style={{ marginTop: 28 }}><ErrorAlert error={q.error} /></div>;
 
   const save = async () => {
@@ -178,7 +176,7 @@ function DocumentBody({ item }: { item: ItemDetail }) {
       await qc.invalidateQueries({ queryKey: ['item', item.id] });
       await qc.invalidateQueries({ queryKey: ['revisions', item.id] });
       setDraft(null);
-      toast('Document saved');
+      toast(t("Document saved"));
     } catch (e) {
       setError(e);
     } finally {
@@ -190,17 +188,17 @@ function DocumentBody({ item }: { item: ItemDetail }) {
     return (
       <div style={{ marginTop: 28 }}>
         {error instanceof ApiError && error.status === 409 ? (
-          <div style={{ marginBottom: 12 }}><Alert tone="warn" title="Someone else saved this document">Copy your changes somewhere safe, then reload to see the latest version.</Alert></div>
+          <div style={{ marginBottom: 12 }}><Alert tone="warn" title={t("Someone else saved this document")}>{t("Copy your changes somewhere safe, then reload to see the latest version.")}</Alert></div>
         ) : <ErrorAlert error={error} />}
         <div className="editor">
-          <textarea className="textarea" value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="Document content (Markdown)" autoFocus />
+          <textarea className="textarea" value={draft} onChange={(e) => setDraft(e.target.value)} aria-label={t("Document content (Markdown)")} autoFocus />
           <div className="preview card card-pad" style={{ overflow: 'auto', maxHeight: 560 }}><Markdown source={draft} /></div>
         </div>
         <div className="row sticky-bar">
-          <span className="subtle">Markdown · {draft.length.toLocaleString()} characters</span>
+          <span className="subtle">{t("Markdown ·")}{' '}{draft.length.toLocaleString()}{' '}{t("characters")}</span>
           <span className="spacer" />
-          <button className="btn" onClick={() => setDraft(null)} disabled={saving}>Cancel</button>
-          <button className="btn primary" onClick={save} disabled={saving || !dirty}>{saving ? <Spinner /> : 'Save document'}</button>
+          <button className="btn" onClick={() => setDraft(null)} disabled={saving}>{t("Cancel")}</button>
+          <button className="btn primary" onClick={save} disabled={saving || !dirty}>{saving ? <Spinner /> : t("Save document")}</button>
         </div>
       </div>
     );
@@ -209,13 +207,13 @@ function DocumentBody({ item }: { item: ItemDetail }) {
   return (
     <div style={{ marginTop: 28 }}>
       <div className="row" style={{ marginBottom: 12 }}>
-        <span className="subtle">{q.data.updatedBy ? `Last edited by ${q.data.updatedBy.displayName} ${timeAgo(q.data.updatedAt)}` : ''}</span>
+        <span className="subtle">{q.data.updatedBy ? t('Last edited by {name} {when}', { name: q.data.updatedBy.displayName, when: timeAgo(q.data.updatedAt) }) : ''}</span>
         <span className="spacer" />
-        <button className="btn sm ghost" onClick={() => setHistoryOpen(true)}><History size={14} /> History</button>
-        {item.permissions.edit && item.status === 'active' && <button className="btn sm" onClick={() => setDraft(q.data.content)}><Pencil size={14} /> Edit</button>}
+        <button className="btn sm ghost" onClick={() => setHistoryOpen(true)}><History size={14} />{' '}{t("History")}</button>
+        {item.permissions.edit && item.status === 'active' && <button className="btn sm" onClick={() => setDraft(q.data.content)}><Pencil size={14} />{' '}{t("Edit")}</button>}
       </div>
       <div className="card card-pad" style={{ padding: '24px 28px' }}>
-        {q.data.content.trim() ? <Markdown source={q.data.content} /> : <p className="subtle">Empty document.</p>}
+        {q.data.content.trim() ? <Markdown source={q.data.content} /> : <p className="subtle">{t("Empty document.")}</p>}
       </div>
       {historyOpen && <HistoryModal item={item} version={q.data.version} onClose={() => setHistoryOpen(false)} />}
     </div>
@@ -243,7 +241,7 @@ function HistoryModal({ item, version, onClose }: { item: ItemDetail; version: n
         qc.invalidateQueries({ queryKey: ['item', item.id] }),
         qc.invalidateQueries({ queryKey: ['revisions', item.id] }),
       ]);
-      toast('Version restored');
+      toast(t("Version restored"));
       onClose();
     } catch (e) {
       toast(errorText(e), 'error');
@@ -253,23 +251,23 @@ function HistoryModal({ item, version, onClose }: { item: ItemDetail; version: n
   };
 
   return (
-    <Modal open onClose={onClose} title="History" wide
-      footer={<><button className="btn" onClick={onClose}>Close</button>{canRestore && <button className="btn primary" onClick={restore} disabled={busy}>{busy ? <Spinner /> : 'Restore this version'}</button>}</>}>
+    <Modal open onClose={onClose} title={t("History")} wide
+      footer={<><button className="btn" onClick={onClose}>{t("Close")}</button>{canRestore && <button className="btn primary" onClick={restore} disabled={busy}>{busy ? <Spinner /> : t("Restore this version")}</button>}</>}>
       <div className="history">
-        <ul className="history-list" aria-label="Versions">
+        <ul className="history-list" aria-label={t("Versions")}>
           {list.isLoading && <li className="subtle" style={{ padding: 12 }}><Spinner /></li>}
           {list.data?.data.map((r: any) => (
             <li key={r.id}>
               <button className={r.id === shown ? 'on' : ''} onClick={() => setSelected(r.id)} aria-pressed={r.id === shown}>
                 <span className="history-when" title={fullDate(r.createdAt)}>{timeAgo(r.createdAt)}</span>
                 <span className="subtle">{r.author.displayName}</span>
-                {r.current ? <span className="badge accent">Current</span> : r.restored ? <span className="badge">Restored</span> : null}
+                {r.current ? <span className="badge accent">{t("Current")}</span> : r.restored ? <span className="badge">{t("Restored")}</span> : null}
               </button>
             </li>
           ))}
         </ul>
         <div className="history-preview">
-          {rev.isLoading ? <Spinner /> : rev.data ? (rev.data.content.trim() ? <Markdown source={rev.data.content} /> : <p className="subtle">Empty.</p>) : null}
+          {rev.isLoading ? <Spinner /> : rev.data ? (rev.data.content.trim() ? <Markdown source={rev.data.content} /> : <p className="subtle">{t("Empty.")}</p>) : null}
         </div>
       </div>
     </Modal>

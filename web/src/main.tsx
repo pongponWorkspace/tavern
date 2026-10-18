@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from './api';
 import { App } from './App';
 import { ToastProvider } from './components/ui';
+import { LanguageProvider } from './lib/i18n';
 import { applyStoredTheme } from './lib/session';
 import './styles.css';
 
@@ -25,9 +26,11 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <ToastProvider>
-          <App />
-        </ToastProvider>
+        <LanguageProvider>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
+        </LanguageProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,

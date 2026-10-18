@@ -1,5 +1,6 @@
 import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Plus, X } from 'lucide-react';
+import { t } from '../lib/i18n';
 
 const norm = (s: string) => s.trim().toLowerCase();
 
@@ -32,11 +33,11 @@ export function TagInput({ id, value, onChange, suggestions, max = 20 }: {
   }, [text, suggestions, chosen]);
 
   const add = (name: string) => {
-    const t = name.trim().slice(0, 40);
-    if (!t || chosen.has(norm(t)) || value.length >= max) return;
+    const entry = name.trim().slice(0, 40);
+    if (!entry || chosen.has(norm(entry)) || value.length >= max) return;
     // Reuse the existing spelling when the tag already exists.
-    const existing = suggestions.find((s) => norm(s.name) === norm(t));
-    onChange([...value, existing?.name ?? t]);
+    const existing = suggestions.find((s) => norm(s.name) === norm(entry));
+    onChange([...value, existing?.name ?? entry]);
     setText('');
     setActive(0);
   };
@@ -69,10 +70,10 @@ export function TagInput({ id, value, onChange, suggestions, max = 20 }: {
   return (
     <div className="tag-input-wrap">
       <div className="tag-input" onClick={() => inputRef.current?.focus()}>
-        {value.map((t) => (
-          <span key={t} className="tag">
-            {t}
-            <button type="button" className="tag-x" onClick={(e) => { e.stopPropagation(); remove(t); }} aria-label={`Remove tag ${t}`}>
+        {value.map((entry) => (
+          <span key={entry} className="tag">
+            {entry}
+            <button type="button" className="tag-x" onClick={(e) => { e.stopPropagation(); remove(entry); }} aria-label={t('Remove tag {name}', { name: entry })}>
               <X size={12} />
             </button>
           </span>
@@ -97,7 +98,7 @@ export function TagInput({ id, value, onChange, suggestions, max = 20 }: {
             setTimeout(() => setOpen(false), 120);
             if (text.trim()) add(text);
           }}
-          placeholder={value.length ? '' : 'Choose or type a tag'}
+          placeholder={value.length ? '' : t("Choose or type a tag")}
           role="combobox"
           aria-expanded={showList}
           aria-controls={listId}
@@ -118,7 +119,7 @@ export function TagInput({ id, value, onChange, suggestions, max = 20 }: {
               onMouseDown={(e) => { e.preventDefault(); add(o.name); }}
               onMouseEnter={() => setActive(i)}
             >
-              {o.isNew ? <><Plus size={14} /> Create “{o.name}”</> : <><span className="ellipsis">{o.name}</span>{o.itemCount !== undefined && <span className="subtle">{o.itemCount}</span>}</>}
+              {o.isNew ? <><Plus size={14} />{' '}{t("Create “")}{o.name}”</> : <><span className="ellipsis">{o.name}</span>{o.itemCount !== undefined && <span className="subtle">{o.itemCount}</span>}</>}
             </li>
           ))}
         </ul>

@@ -6,6 +6,7 @@ import { api, type ItemSummary } from '../api';
 import { TYPE_LABEL, timeAgo } from '../lib/format';
 import { TypeIcon } from './ui';
 import { Skel } from './Skeletons';
+import { t } from '../lib/i18n';
 
 /** Wrap the matched part of a title in <mark>. */
 function highlight(text: string, q: string): ReactNode {
@@ -31,8 +32,8 @@ export function GlobalSearch({ tenantId, tenantName }: { tenantId: string; tenan
   const listId = useId();
 
   useEffect(() => {
-    const t = setTimeout(() => setQ(text.trim()), 180);
-    return () => clearTimeout(t);
+    const entry = setTimeout(() => setQ(text.trim()), 180);
+    return () => clearTimeout(entry);
   }, [text]);
   useEffect(() => setActive(0), [q]);
   // Close after navigating somewhere.
@@ -103,8 +104,8 @@ export function GlobalSearch({ tenantId, tenantName }: { tenantId: string; tenan
           onChange={(e) => { setText(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder={`Search ${tenantName}…`}
-          aria-label="Search knowledge across your projects"
+          placeholder={t('Search {name}…', { name: tenantName })}
+          aria-label={t("Search knowledge across your projects")}
           role="combobox"
           aria-expanded={showPop}
           aria-controls={listId}
@@ -117,7 +118,7 @@ export function GlobalSearch({ tenantId, tenantName }: { tenantId: string; tenan
       {showPop && (
         <div className="gsearch-pop">
           {waiting && results.length === 0 ? (
-            <div role="status" aria-label="Searching">
+            <div role="status" aria-label={t("Searching")}>
               {[0, 1, 2].map((i) => (
                 <div key={i} className="gs-item">
                   <Skel w={26} h={26} r={6} />
@@ -126,11 +127,11 @@ export function GlobalSearch({ tenantId, tenantName }: { tenantId: string; tenan
               ))}
             </div>
           ) : results.length === 0 ? (
-            <div className="gs-empty" role="status">No results for “{q}”. Try a different word.</div>
+            <div className="gs-empty" role="status">{t("No results for “")}{q}{t("”. Try a different word.")}</div>
           ) : (
             <>
-              <div className="gs-head"><span>Knowledge</span><span>{results.length === 8 ? 'Top 8' : `${results.length} result${results.length === 1 ? '' : 's'}`}</span></div>
-              <ul id={listId} role="listbox" aria-label="Search results">
+              <div className="gs-head"><span>{t("Knowledge")}</span><span>{results.length === 8 ? t("Top 8") : t(results.length === 1 ? '{n} result' : '{n} results', { n: results.length })}</span></div>
+              <ul id={listId} role="listbox" aria-label={t("Search results")}>
                 {results.map((r, i) => (
                   <li
                     key={r.id}
@@ -145,7 +146,7 @@ export function GlobalSearch({ tenantId, tenantName }: { tenantId: string; tenan
                     <div style={{ minWidth: 0 }}>
                       <div className="gs-title ellipsis">{highlight(r.title, q)}</div>
                       <div className="gs-meta ellipsis">
-                        {r.project?.name} · {r.category?.name ?? TYPE_LABEL[r.type]} · updated {timeAgo(r.updatedAt)}
+                        {r.project?.name} · {r.category?.name ?? TYPE_LABEL[r.type]}{' '}{t("· updated")}{' '}{timeAgo(r.updatedAt)}
                       </div>
                     </div>
                   </li>

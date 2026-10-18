@@ -47,8 +47,8 @@ export const lastTenant = () => {
 const THEME = 'tavern.theme';
 export function applyStoredTheme() {
   try {
-    const t = localStorage.getItem(THEME);
-    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    const entry = localStorage.getItem(THEME);
+    if (entry === 'light' || entry === 'dark') document.documentElement.dataset.theme = entry;
   } catch {
     /* ignore */
   }

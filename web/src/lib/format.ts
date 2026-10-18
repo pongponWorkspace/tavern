@@ -1,33 +1,41 @@
 import type { ProjectRole, TenantRole } from '../api';
+import { locale, t } from './i18n';
 
-export const PROJECT_ROLE_LABEL: Record<ProjectRole, string> = {
+/** A label map whose values are translated each time they are read. */
+function labels<K extends string>(map: Record<K, string>): Record<K, string> {
+  const out = {} as Record<K, string>;
+  for (const k of Object.keys(map) as K[]) Object.defineProperty(out, k, { get: () => t(map[k]), enumerable: true });
+  return out;
+}
+
+export const PROJECT_ROLE_LABEL = labels<ProjectRole>({
   project_admin: 'Project Admin',
   maintainer: 'Maintainer',
   member: 'Member',
   viewer: 'Viewer',
-};
-export const PROJECT_ROLE_HINT: Record<ProjectRole, string> = {
+});
+export const PROJECT_ROLE_HINT = labels<ProjectRole>({
   project_admin: 'Manages settings, members, invitations and all knowledge',
   maintainer: 'Maintains knowledge and onboarding; cannot manage members',
   member: 'Reads knowledge and contributes where the project allows',
   viewer: 'Read-only access',
-};
-export const TENANT_ROLE_LABEL: Record<TenantRole, string> = { owner: 'Owner', admin: 'Admin', member: 'Member' };
-export const TYPE_LABEL = { external_link: 'Link', uploaded_file: 'File', internal_document: 'Document' } as const;
+});
+export const TENANT_ROLE_LABEL = labels<TenantRole>({ owner: 'Owner', admin: 'Admin', member: 'Member' });
+export const TYPE_LABEL = labels<'external_link' | 'uploaded_file' | 'internal_document'>({ external_link: 'Link', uploaded_file: 'File', internal_document: 'Document' });
 
-const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
 export function timeAgo(iso: string | null | undefined): string {
   if (!iso) return '';
+  const rtf = new Intl.RelativeTimeFormat(locale(), { numeric: 'auto' });
   const diff = (new Date(iso).getTime() - Date.now()) / 1000;
   const abs = Math.abs(diff);
-  if (abs < 45) return 'just now';
+  if (abs < 45) return t('just now');
   if (abs < 3600) return rtf.format(Math.round(diff / 60), 'minute');
   if (abs < 86400) return rtf.format(Math.round(diff / 3600), 'hour');
   if (abs < 86400 * 30) return rtf.format(Math.round(diff / 86400), 'day');
-  return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: abs > 86400 * 300 ? 'numeric' : undefined });
+  return new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'short', year: abs > 86400 * 300 ? 'numeric' : undefined });
 }
 export const fullDate = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
+  iso ? new Date(iso).toLocaleString(locale(), { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
 export function bytes(n: number | null | undefined): string {
   if (n == null) return '';
@@ -74,4 +82,5 @@ const ACTION_LABEL: Record<string, string> = {
   'tenant.member_suspended': 'suspended', 'tenant.member_reactivated': 'reactivated', 'tenant.ownership_transferred': 'transferred ownership to',
   'workspace.created': 'created workspace', 'workspace.updated': 'updated workspace', 'workspace.archived': 'archived workspace', 'workspace.restored': 'restored workspace',
 };
-export const actionLabel = (a: string) => ACTION_LABEL[a] ?? a.replace(/[._]/g, ' ');
+export const actionLabel = (a: string) => (ACTION_LABEL[a] ? t(ACTION_LABEL[a]) : a.replace(/[._]/g, ' '));
+export const shortDate = (iso: string) => new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'short' });

@@ -3,6 +3,7 @@ import { AlertTriangle, Building2, CheckCircle2, ExternalLink, Eye, FileText, In
 import type { ItemType, ProjectRole, TenantRole } from '../api';
 import { ApiError } from '../api';
 import { colorFor, initials, PROJECT_ROLE_LABEL } from '../lib/format';
+import { t, translateError } from '../lib/i18n';
 
 /** The pushpin mark: a pin seen from the side, which reads as a T. Plate and ink follow the theme through tokens. */
 export function BrandMark({ size = 28 }: { size?: number }) {
@@ -19,7 +20,7 @@ export function BrandMark({ size = 28 }: { size?: number }) {
   );
 }
 
-export function Spinner({ label = 'Loading' }: { label?: string }) {
+export function Spinner({ label = t('Loading') }: { label?: string }) {
   return <span className="spinner" role="status" aria-label={label} />;
 }
 
@@ -57,7 +58,7 @@ export function TenantRoleBadge({ role }: { role: TenantRole }) {
   return (
     <span className={`badge ${role === 'owner' ? 'solid' : ''}`}>
       {role !== 'member' && <Building2 />}
-      {role === 'owner' ? 'Tenant Owner' : role === 'admin' ? 'Tenant Admin' : 'Member'}
+      {role === 'owner' ? t("Tenant Owner") : role === 'admin' ? t("Tenant Admin") : t("Member")}
     </span>
   );
 }
@@ -87,7 +88,7 @@ export function Alert({ tone = 'info', children, title }: { tone?: 'info' | 'war
 
 export function ErrorAlert({ error }: { error: unknown }) {
   if (!error) return null;
-  const msg = error instanceof ApiError ? error.message : 'Something went wrong. Please try again.';
+  const msg = errorText(error);
   return <Alert tone="danger">{msg}</Alert>;
 }
 
@@ -128,7 +129,7 @@ export function Modal({ open, onClose, title, children, footer, wide }: { open: 
         <>
           <div className="modal-head">
             <h2 id={titleId}>{title}</h2>
-            <button type="button" className="btn ghost icon sm" onClick={onClose} aria-label="Close">
+            <button type="button" className="btn ghost icon sm" onClick={onClose} aria-label={t("Close")}>
               <X size={16} />
             </button>
           </div>
@@ -150,7 +151,7 @@ export function ConfirmDialog({
       title={title}
       footer={
         <>
-          <button className="btn" onClick={onClose} disabled={busy}>Cancel</button>
+          <button className="btn" onClick={onClose} disabled={busy}>{t("Cancel")}</button>
           <button className={`btn ${danger ? 'danger solid' : 'primary'}`} onClick={onConfirm} disabled={busy}>
             {busy ? <Spinner /> : confirmLabel}
           </button>
@@ -192,7 +193,7 @@ export function Menu({ trigger, children, align = 'right', up }: { trigger: (p: 
 export function OpenLink({ href, children }: { href: string; children?: ReactNode }) {
   return (
     <a className="btn primary" href={href} target="_blank" rel="noopener noreferrer">
-      {children ?? 'Open link'} <ExternalLink size={15} />
+      {children ?? t("Open link")} <ExternalLink size={15} />
     </a>
   );
 }
@@ -205,10 +206,10 @@ export const useToast = () => useContext(ToastCtx);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const dismiss = (id: number) => setToasts((t) => t.filter((x) => x.id !== id));
+  const dismiss = (id: number) => setToasts((entry) => entry.filter((x) => x.id !== id));
   const push = useCallback((text: string, tone: Toast['tone'] = 'default') => {
     const id = Date.now() + Math.random();
-    setToasts((t) => [...t.slice(-2), { id, text, tone }]);
+    setToasts((entry) => [...entry.slice(-2), { id, text, tone }]);
     // Errors stay until dismissed; confirmations close themselves.
     if (tone !== 'error') setTimeout(() => dismiss(id), 5000);
   }, []);
@@ -216,11 +217,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastCtx.Provider value={push}>
       {children}
       <div className="toasts" aria-live="polite">
-        {toasts.map((t) => (
-          <div key={t.id} className={`toast ${t.tone === 'error' ? 'error' : ''}`} role={t.tone === 'error' ? 'alert' : undefined}>
-            {t.tone === 'error' ? <XCircle size={16} className="t-icon" /> : <CheckCircle2 size={16} className="t-icon" />}
-            <span className="t-text">{t.text}</span>
-            <button type="button" className="t-close" onClick={() => dismiss(t.id)} aria-label="Dismiss">
+        {toasts.map((item) => (
+          <div key={item.id} className={`toast ${item.tone === 'error' ? 'error' : ''}`} role={item.tone === 'error' ? 'alert' : undefined}>
+            {item.tone === 'error' ? <XCircle size={16} className="t-icon" /> : <CheckCircle2 size={16} className="t-icon" />}
+            <span className="t-text">{item.text}</span>
+            <button type="button" className="t-close" onClick={() => dismiss(item.id)} aria-label={t("Dismiss")}>
               <X size={14} />
             </button>
           </div>
@@ -231,4 +232,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 /** Turn an unknown error into a toast-able sentence. */
-export const errorText = (e: unknown) => (e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
+export const errorText = (e: unknown) => (e instanceof ApiError ? translateError(e.message) : t('Something went wrong. Please try again.'));

@@ -18,8 +18,8 @@ let previewRole: Exclude<ProjectRole, 'project_admin'> | null = null;
 export const setPreviewRole = (r: typeof previewRole) => {
   previewRole = r;
 };
-export const setCsrf = (t: string | null) => {
-  csrfToken = t;
+export const setCsrf = (entry: string | null) => {
+  csrfToken = entry;
 };
 
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown; query?: Record<string, unknown> } = {}): Promise<T> {

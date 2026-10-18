@@ -40,8 +40,8 @@ function Home() {
   if (!me.data) return null;
   if (me.data.tenants.length === 0) return <Navigate to="/setup" replace />;
   const last = lastTenant();
-  const t = me.data.tenants.find((x) => x.id === last) ?? me.data.tenants[0];
-  return <Navigate to={`/t/${t.id}`} replace />;
+  const entry = me.data.tenants.find((x) => x.id === last) ?? me.data.tenants[0];
+  return <Navigate to={`/t/${entry.id}`} replace />;
 }
 
 export function App() {

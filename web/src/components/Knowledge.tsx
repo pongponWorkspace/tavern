@@ -1,13 +1,14 @@
 import { Link } from 'react-router';
 import { Pin, ShieldAlert, Clock } from 'lucide-react';
 import type { ItemSummary } from '../api';
-import { bytes, hostOf, timeAgo, TYPE_LABEL } from '../lib/format';
+import { bytes, fullDate, hostOf, timeAgo, TYPE_LABEL } from '../lib/format';
 import { Avatar, TypeIcon } from './ui';
+import { t } from '../lib/i18n';
 
 export function ScanBadge({ status }: { status: string }) {
   if (status === 'clean') return null;
-  if (status === 'pending') return <span className="badge warn"><Clock size={12} /> Scanning</span>;
-  return <span className="badge danger"><ShieldAlert size={12} /> {status === 'quarantined' ? 'Blocked' : 'Unavailable'}</span>;
+  if (status === 'pending') return <span className="badge warn"><Clock size={12} />{' '}{t("Scanning")}</span>;
+  return <span className="badge danger"><ShieldAlert size={12} /> {status === 'quarantined' ? t("Blocked") : t("Unavailable")}</span>;
 }
 
 function source(item: ItemSummary) {
@@ -17,15 +18,15 @@ function source(item: ItemSummary) {
 }
 
 /** Dense list row — title, why it matters, and who/when (§13.2). */
-export function KnowledgeRow({ item, showProject, actions, onTag }: { item: ItemSummary; showProject?: boolean; actions?: React.ReactNode; onTag?: (t: string) => void }) {
+export function KnowledgeRow({ item, showProject, actions, onTag }: { item: ItemSummary; showProject?: boolean; actions?: React.ReactNode; onTag?: (entry: string) => void }) {
   return (
     <div className="k-row">
       <TypeIcon type={item.type} />
       <div style={{ minWidth: 0 }}>
         <div className="row" style={{ gap: 8 }}>
           <Link to={`/p/${item.projectId}/k/${item.id}`} className="k-title">{item.title}</Link>
-          {item.isPinned && <Pin size={14} className="pin" aria-label="Pinned" />}
-          {item.status === 'archived' && <span className="badge">Archived</span>}
+          {item.isPinned && <Pin size={14} className="pin" aria-label={t("Pinned")} />}
+          {item.status === 'archived' && <span className="badge">{t("Archived")}</span>}
           {item.file && <ScanBadge status={item.file.scanStatus} />}
         </div>
         {item.description && <p className="k-desc">{item.description}</p>}
@@ -33,8 +34,8 @@ export function KnowledgeRow({ item, showProject, actions, onTag }: { item: Item
           <span>{source(item)}</span>
           {showProject && item.project && <><span className="sep" /><span>{item.project.name}</span></>}
           {item.category && <><span className="sep" /><span>{item.category.name}</span></>}
-          {item.tags.slice(0, 4).map((t) =>
-            onTag ? <button key={t} className="tag" onClick={() => onTag(t)}>{t}</button> : <span key={t} className="tag">{t}</span>,
+          {item.tags.slice(0, 4).map((entry) =>
+            onTag ? <button key={entry} className="tag" onClick={() => onTag(entry)}>{entry}</button> : <span key={entry} className="tag">{entry}</span>,
           )}
           <span className="sep" />
           {item.owner && (
@@ -43,7 +44,7 @@ export function KnowledgeRow({ item, showProject, actions, onTag }: { item: Item
               {item.owner.displayName}
             </span>
           )}
-          <span title={new Date(item.updatedAt).toLocaleString()}>updated {timeAgo(item.updatedAt)}</span>
+          <span title={fullDate(item.updatedAt)}>{t("updated")}{' '}{timeAgo(item.updatedAt)}</span>
         </div>
       </div>
       {actions && <div className="k-actions">{actions}</div>}
@@ -59,7 +60,7 @@ export function KnowledgeTile({ item }: { item: ItemSummary }) {
         <TypeIcon type={item.type} />
         <span className="spacer" />
         {item.file && <ScanBadge status={item.file.scanStatus} />}
-        {item.isPinned && <Pin size={14} className="pin" aria-label="Pinned" />}
+        {item.isPinned && <Pin size={14} className="pin" aria-label={t("Pinned")} />}
       </div>
       <div>
         <div className="k-title">{item.title}</div>
