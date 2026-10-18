@@ -17,7 +17,11 @@ const USERS = [
 ] as const;
 
 async function main() {
-  await migrate(config.databaseUrl, () => {});
+  // Demo accounts share a known password: never put them on a production database.
+  if (config.isProd || config.neonBranch === 'production' || config.neonBranch === 'main') {
+    throw new Error(`Refusing to seed demo data on ${config.isProd ? 'NODE_ENV=production' : `Neon branch "${config.neonBranch}"`}. Use a dev branch (neon checkout dev).`);
+  }
+  await migrate(config.databaseUrlDirect, () => {});
   if (process.argv.includes('--reset')) {
     await query(pool, `TRUNCATE users, tenants, email_outbox, audit_logs RESTART IDENTITY CASCADE`);
     console.log('database reset');

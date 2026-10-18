@@ -1,5 +1,8 @@
 import pg from 'pg';
 import { config } from '../config.js';
+import { pgConnectionString } from './url.js';
+
+export { pgConnectionString };
 
 // Return timestamptz as ISO strings and bigint counts as numbers.
 pg.types.setTypeParser(1184, (v) => new Date(v).toISOString());
@@ -7,7 +10,16 @@ pg.types.setTypeParser(20, (v) => Number(v));
 
 export type Db = pg.Pool | pg.PoolClient;
 
-export const pool = new pg.Pool({ connectionString: config.databaseUrl, max: 10 });
+
+
+export const pool = new pg.Pool({
+  connectionString: pgConnectionString(config.databaseUrl),
+  max: 10,
+  // Neon computes scale to zero; the first connection after a pause takes a moment to wake.
+  connectionTimeoutMillis: 15_000,
+  idleTimeoutMillis: 30_000,
+  keepAlive: true,
+});
 
 export async function query<T = any>(db: Db, text: string, params: unknown[] = []): Promise<T[]> {
   const res = await db.query(text, params as any[]);

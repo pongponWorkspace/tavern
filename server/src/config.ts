@@ -19,7 +19,12 @@ export const config = {
   isTest,
   port: Number(env('PORT', '4000')),
   appOrigin: env('APP_ORIGIN', 'http://localhost:5173'),
+  /** App traffic. On Neon this is the pooled (-pooler) endpoint. */
   databaseUrl: env('DATABASE_URL', 'postgres://tavern:tavern@localhost:54329/tavern'),
+  /** Schema migrations. Neon recommends a direct (unpooled) connection for DDL; falls back to DATABASE_URL. */
+  databaseUrlDirect: process.env.DATABASE_URL_UNPOOLED || env('DATABASE_URL', 'postgres://tavern:tavern@localhost:54329/tavern'),
+  /** Set by `neon env pull` / `neon checkout`; used to keep demo data off production. */
+  neonBranch: process.env.NEON_BRANCH ?? '',
   appSecret: (() => {
     const s = env('APP_SECRET', isProd ? undefined : 'dev-only-secret-change-me-0123456789abcdef');
     if (isProd && s.length < 32) throw new Error('APP_SECRET must be at least 32 characters in production');

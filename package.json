@@ -3,7 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "description": "Tavern — Project Knowledge Board (multi-tenant MVP)",
-  "workspaces": ["server", "web"],
+  "workspaces": [
+    "server",
+    "web"
+  ],
   "scripts": {
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
@@ -15,5 +18,9 @@
     "build": "npm run build -w web && npm run build -w server",
     "test": "npm test -w server",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w web"
+  },
+  "dependencies": {
+    "@neon/config": "^1.9.2",
+    "@neon/env": "^1.6.3"
   }
 }
