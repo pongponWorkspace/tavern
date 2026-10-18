@@ -7,7 +7,7 @@ import { useMe, useTenantPerms } from '../lib/session';
 import { timeAgo } from '../lib/format';
 import { Empty, ErrorAlert, Field, Menu, Modal, RoleBadge, Spinner, errorText, useToast } from '../components/ui';
 import { PageHeadSkeleton, TableSkeleton, TileGridSkeleton } from '../components/Skeletons';
-import { NotFound } from './NotFound';
+import { NotFound, UnknownOrganization } from './NotFound';
 
 function useTenant(tenantId: string) {
   const me = useMe();
@@ -89,7 +89,7 @@ export function Workspaces() {
   const toast = useToast();
   const [creating, setCreating] = useState(false);
   const q = useQuery({ queryKey: ['workspaces', tenantId], queryFn: () => api(`/tenants/${tenantId}/workspaces`), enabled: Boolean(tenant) });
-  if (!tenant) return <NotFound what="organization" />;
+  if (!tenant) return <UnknownOrganization />;
   if (q.isLoading) return <div className="content"><PageHeadSkeleton action={perms.createWorkspace} /><TileGridSkeleton n={3} /></div>;
 
   const setStatus = async (id: string, status: 'active' | 'archived') => {
@@ -144,7 +144,7 @@ export function WorkspaceDetail() {
   const { tenant, perms } = useTenant(tenantId);
   const [creating, setCreating] = useState(false);
   const q = useQuery({ queryKey: ['workspace-projects', workspaceId], queryFn: () => api(`/workspaces/${workspaceId}/projects`), enabled: Boolean(tenant) });
-  if (!tenant) return <NotFound what="organization" />;
+  if (!tenant) return <UnknownOrganization />;
   if (q.isLoading) return <div className="content"><PageHeadSkeleton crumbs action={perms.createProject} /><TableSkeleton rows={4} cols={4} avatar={false} /></div>;
   if (q.error) return <NotFound what="workspace" />;
   const ws = q.data.workspace;

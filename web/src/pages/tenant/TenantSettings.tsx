@@ -10,14 +10,14 @@ import { Avatar, ConfirmDialog, TenantRoleBadge, Empty, ErrorAlert, Field, Spinn
 import { PageHeadSkeleton, TableSkeleton, TabsSkeleton } from '../../components/Skeletons';
 import { InviteModal, InviteStatus } from '../project/Members';
 import { TenantRoleTable } from '../../components/RoleTables';
-import { NotFound } from '../NotFound';
+import { NotFound, UnknownOrganization } from '../NotFound';
 
 export function TenantSettings() {
   const { tenantId = '', tab } = useParams();
   const me = useMe();
   const tenant = me.data?.tenants.find((t) => t.id === tenantId);
   const q = useQuery({ queryKey: ['tenant', tenantId], queryFn: () => api(`/tenants/${tenantId}`), enabled: Boolean(tenant) });
-  if (!tenant) return <NotFound what="organization" />;
+  if (!tenant) return <UnknownOrganization />;
   if (q.isLoading) return <div className="content"><PageHeadSkeleton /><TabsSkeleton n={4} /><TableSkeleton rows={5} cols={5} /></div>;
   if (q.error || !q.data) return <div className="content"><ErrorAlert error={q.error} /></div>;
   const perms = q.data.permissions;

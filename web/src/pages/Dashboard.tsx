@@ -7,7 +7,7 @@ import { timeAgo } from '../lib/format';
 import { KnowledgeRow, RowSkeleton } from '../components/Knowledge';
 import { Empty, ErrorAlert, RoleBadge } from '../components/ui';
 import { TileGridSkeleton } from '../components/Skeletons';
-import { NotFound } from './NotFound';
+import { NotFound, UnknownOrganization } from './NotFound';
 
 export function Dashboard() {
   const { tenantId = '' } = useParams();
@@ -15,7 +15,7 @@ export function Dashboard() {
   const tenant = me.data?.tenants.find((t) => t.id === tenantId);
   const perms = useTenantPerms(tenantId);
   const q = useQuery({ queryKey: ['dashboard', tenantId], queryFn: () => api(`/tenants/${tenantId}/dashboard`), enabled: Boolean(tenant) });
-  if (!tenant) return <NotFound what="organization" />;
+  if (!tenant) return <UnknownOrganization />;
   const d = q.data;
   const isAdmin = perms.createProject;
   const hour = new Date().getHours();
@@ -33,7 +33,6 @@ export function Dashboard() {
       <section>
         <div className="section-head">
           <h2>Your projects</h2>
-          <Link to={`/t/${tenantId}/workspaces`} style={{ fontSize: 14 }}>All workspaces</Link>
         </div>
         {q.isLoading ? (
           <TileGridSkeleton n={3} />
